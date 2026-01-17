@@ -1,1428 +1,291 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <title>হানজি মনে-রাখা</title>
-  <style>
-    :root{
-      --bg:#e2f1f8; --card:#fff; --text:#333; --sub:#555; --accent:#0077aa;
-    }
-    [data-theme="dark"]{
-      --bg:#121212; --card:#1e1e1e; --text:#e0e0e0; --sub:#aaa; --accent:#4fc3f7;
-    }
-    body{
-      font-family:'Noto Sans Bengali',sans-serif;
-      background:var(--bg); color:var(--text);
-      display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0;
-      transition:background .3s, color .3s;
-    }
-    #box{
-      width:360px; background:var(--card); border-radius:12px;
-      box-shadow:0 8px 25px rgba(0,0,0,.25); padding:30px; text-align:center;
-    }
-    #card{font-size:70px; margin:15px 0; color:var(--accent)}
-    #pinyin{font-size:22px; color:var(--sub)}
-    #mean{font-size:20px; margin:8px 0; color:var(--text)}
-    #bn{font-size:18px; color:var(--sub); margin-bottom:20px}
-    .btn{
-      background:var(--accent); color:#fff; border:none;
-      padding:10px 20px; margin:6px; border-radius:6px; cursor:pointer; font-size:16px;
-    }
-    .btn:hover{filter:brightness(1.15)}
-    #stat{margin-top:12px;font-size:14px;color:var(--sub)}
-    /* Dark-mode toggle */
-    #toggle{
-      position:absolute; top:12px; right:12px; font-size:26px; cursor:pointer;
-      background:none; border:none; color:var(--accent);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>বইঘর - Boi Ghor | With News Feed</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #4361ee; --secondary: #3f37c9; --accent: #f72585;
+            --bg-light: #f8f9fa; --text-light: #212529; --card-light: rgba(255, 255, 255, 0.90);
+            --bg-dark: #0f0f13; --text-dark: #f8f9fa; --card-dark: rgba(20, 20, 25, 0.90);
+            --transition: all 0.3s ease; --shadow: 0 8px 30px rgba(0,0,0,0.08);
+        }
+        body.dark-mode { --bg-light: #050505; --text-light: var(--text-dark); --card-light: rgba(30, 30, 35, 0.95); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', 'Hind Siliguri', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-light); color: var(--text-light); transition: var(--transition); overflow-x: hidden; min-height: 100vh; padding-bottom: 20px; }
+        
+        /* 3D Background */
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 1; pointer-events: none; }
+
+        /* Navbar */
+        header { position: sticky; top: 0; z-index: 100; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); padding: 0.8rem 5%; box-shadow: 0 2px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        body.dark-mode header { background: rgba(10, 10, 15, 0.85); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        .nav-actions { display: flex; gap: 10px; align-items: center; }
+        .btn-icon { background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-light); position: relative; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+        .btn-icon:hover { background: rgba(67, 97, 238, 0.1); color: var(--primary); }
+        .btn-icon.active-nav { background: var(--primary); color: white; }
+        .badge { position: absolute; top: -2px; right: -2px; background: var(--accent); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; }
+
+        /* Admin Button */
+        #admin-btn { display: none; background: var(--accent); color: white; }
+        #admin-btn:hover { background: #d00060; }
+
+        /* Controls */
+        .controls-bar { padding: 1rem 5%; margin-top: 0.5rem; display: flex; gap: 15px; flex-wrap: wrap; }
+        .search-box { position: relative; flex: 1; min-width: 200px; }
+        .search-box input { width: 100%; padding: 12px 40px 12px 20px; border-radius: 30px; border: 1px solid rgba(0,0,0,0.1); background: var(--card-light); color: var(--text-light); box-shadow: var(--shadow); }
+        .search-box i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #999; }
+        .filters { display: flex; gap: 10px; flex-wrap: wrap; }
+        .filters select { padding: 10px 15px; border-radius: 20px; border: 1px solid rgba(0,0,0,0.1); background: var(--card-light); color: var(--text-light); cursor: pointer; }
+
+        /* Grid */
+        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 1.5rem 5%; }
+        .book-card { background: var(--card-light); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); transition: var(--transition); display: flex; flex-direction: column; }
+        .book-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .book-img-wrap { width: 100%; aspect-ratio: 2/3; overflow: hidden; position: relative; background: #eee; }
+        .book-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s; }
+        .book-card:hover .book-img { transform: scale(1.08); }
+        .card-actions { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 8px; }
+        .action-btn { width: 32px; height: 32px; border-radius: 50%; background: white; color: #333; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .book-info { padding: 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .book-title { font-size: 1rem; font-weight: 600; margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .book-price { font-size: 1.1rem; color: var(--primary); font-weight: 700; }
+
+        /* NEWS FEED STYLES */
+        #news-view { display: none; padding: 1.5rem 5%; max-width: 800px; margin: 0 auto; }
+        .news-card { background: var(--card-light); border-radius: 16px; margin-bottom: 30px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+        .news-img { width: 100%; height: 250px; object-fit: cover; display: block; }
+        .news-content { padding: 25px; }
+        .news-date { font-size: 0.85rem; color: var(--primary); font-weight: 600; margin-bottom: 10px; display: block; }
+        .news-title { font-size: 1.6rem; margin-bottom: 15px; line-height: 1.3; }
+        .news-body { font-size: 1rem; line-height: 1.7; color: var(--text-light); opacity: 0.9; white-space: pre-line; }
+        .news-actions { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: flex-end; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s; padding: 20px; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-content { background: var(--bg-light); width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto; border-radius: 16px; position: relative; display: flex; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; z-index: 20; color: var(--text-light); background: rgba(255,255,255,0.5); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        
+        /* Product Modal Layout */
+        .modal-left { flex: 1; background: rgba(0,0,0,0.05); padding: 30px; display: flex; justify-content: center; align-items: center; }
+        .modal-left img { max-width: 100%; max-height: 400px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-right { flex: 1.2; padding: 30px; display: flex; flex-direction: column; }
+        
+        /* Admin Form Styles */
+        .admin-form { display: flex; flex-direction: column; gap: 15px; width: 100%; padding: 20px; }
+        .form-group label { font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+        .form-control { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; background: var(--bg-light); color: var(--text-light); }
+        .admin-book-list { margin-top: 20px; max-height: 300px; overflow-y: auto; }
+        .admin-book-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .delete-btn { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+
+        /* Admin Tab Switcher */
+        .admin-tabs { display: flex; gap: 10px; padding: 20px 20px 0 20px; border-bottom: 1px solid #eee; }
+        .admin-tab { padding: 10px 20px; background: transparent; border: none; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; color: var(--text-light); }
+        .admin-tab.active { border-bottom-color: var(--primary); color: var(--primary); }
+        .admin-panel-section { display: none; }
+        .admin-panel-section.active { display: block; }
+
+        /* Cart Sidebar */
+        .cart-sidebar { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100vh; background: var(--bg-light); z-index: 2000; transition: 0.4s; display: flex; flex-direction: column; box-shadow: -5px 0 30px rgba(0,0,0,0.2); }
+        .cart-sidebar.open { right: 0; }
+        .cart-header, .cart-footer { padding: 20px; background: var(--card-light); }
+        .cart-items { flex: 1; overflow-y: auto; padding: 15px; }
+        .cart-item { display: flex; gap: 12px; margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; }
+        .cart-item img { width: 50px; height: 70px; object-fit: cover; border-radius: 4px; }
+
+        /* General UI */
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .auth-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+        .auth-box { background: var(--bg-light); padding: 2rem; border-radius: 15px; width: 90%; max-width: 350px; text-align: center; }
+        .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 12px 24px; border-radius: 30px; font-size: 0.9rem; z-index: 5000; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); white-space: nowrap; }
+
+        /* PDF Viewer */
+        .pdf-modal-content { background: #1a1a1a; width: 100%; height: 100%; max-width: 100%; max-height: 100%; border-radius: 0; flex-direction: column; }
+        #pdf-render { flex: 1; overflow: auto; display: flex; justify-content: center; padding: 20px; background: #333; }
+        #the-canvas { max-width: 100%; box-shadow: 0 0 15px black; }
+
+        @media (max-width: 768px) {
+            .controls-bar { flex-direction: column; }
+            .book-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 0 4%; }
+            .modal-content { flex-direction: column; }
+            .modal-left { flex: none; padding: 15px; }
+            .modal-left img { height: 200px; width: auto; }
+            .cart-sidebar { width: 100%; }
+        }
+    </style>
 </head>
 <body>
-  <button id="toggle" title="Dark / Light">🌓</button>
 
-  <div id="box">
-    <div id="card">···</div>
-    <div id="pinyin"></div>
-    <div id="mean"></div>
-    <div id="bn"></div>
+    <canvas id="bg-canvas"></canvas>
 
-    <button class="btn" onclick="flip()">Flip</button>
-    <button class="btn" onclick="next()">Next →</button>
-    <button class="btn" onclick="resetAll()">Reset All</button>
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-box">
+            <h2 style="color: var(--primary); margin-bottom: 5px;">বইঘর Login</h2>
+            <p style="color: #666; margin-bottom: 20px;">(Admin Dashboard এর জন্য 'admin' লিখুন)</p>
+            <input type="text" id="username-input" placeholder="আপনার নাম / admin" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; margin-bottom:15px;">
+            <button class="btn-primary" onclick="app.login()">প্রবেশ করুন</button>
+        </div>
+    </div>
 
-    <div id="stat"></div>
-  </div>
+    <header>
+        <div class="logo" onclick="app.switchTab('home')"><i class="fas fa-book-reader"></i> বইঘর</div>
+        <div class="nav-actions">
+            <button class="btn-icon active-nav" id="nav-home" onclick="app.switchTab('home')" title="Books">
+                <i class="fas fa-home"></i>
+            </button>
+            <button class="btn-icon" id="nav-news" onclick="app.switchTab('news')" title="News Feed">
+                <i class="fas fa-newspaper"></i>
+            </button>
+            
+            <span style="width:1px; background:rgba(0,0,0,0.1); height:25px; margin:0 5px;"></span>
 
-  <script>
-    // ===== তোমার JSON =====
-    const data=  [
-  { "hanzi": "唉", "pinyin": "āi", "meaning": "alas", "bn": "আহা" },
-  { "hanzi": "爱心", "pinyin": "àixīn", "meaning": "love", "bn": "ভালোবাসা" },
-  { "hanzi": "安慰", "pinyin": "ānwèi", "meaning": "comfort", "bn": "সান্ত্বনা" },
-  { "hanzi": "岸", "pinyin": "àn", "meaning": "bank", "bn": "তীর" },
-  { "hanzi": "熬夜", "pinyin": "áoyè", "meaning": "stay up late", "bn": "রাত জাগা" },
-  { "hanzi": "包含", "pinyin": "bāohán", "meaning": "contain", "bn": "ধারণ করা" },
-  { "hanzi": "宝贵", "pinyin": "bǎoguì", "meaning": "valuable", "bn": "মূল্যবান" },
-  { "hanzi": "保存", "pinyin": "bǎocún", "meaning": "preservation", "bn": "সংরক্ষণ" },
-  { "hanzi": "保留", "pinyin": "bǎoliú", "meaning": "retain", "bn": "রেখে দেওয়া" },
-  { "hanzi": "报到", "pinyin": "bàodào", "meaning": "register/check in", "bn": "নিবন্ধন করা" },
-  { "hanzi": "报告", "pinyin": "bàogào", "meaning": "presentation", "bn": "প্রতিবেদন" },
-  { "hanzi": "悲观", "pinyin": "bēiguān", "meaning": "pessimism", "bn": "নিরাশাবাদ" },
-  { "hanzi": "背景", "pinyin": "bèijǐng", "meaning": "background", "bn": "পটভূমি" },
-  { "hanzi": "被子", "pinyin": "bèizi", "meaning": "quilt", "bn": "কম্বল" },
-  { "hanzi": "本科", "pinyin": "běnkē", "meaning": "undergraduate", "bn": "স্নাতক" },
-  { "hanzi": "本领", "pinyin": "běnlǐng", "meaning": "ability", "bn": "দক্ষতা" },
-  { "hanzi": "比例", "pinyin": "bǐlì", "meaning": "proportion", "bn": "অনুপাত" },
-  { "hanzi": "必然", "pinyin": "bìrán", "meaning": "inevitable", "bn": "অবশ্যম্ভাবী" },
-  { "hanzi": "必要", "pinyin": "bìyào", "meaning": "necessary", "bn": "আবশ্যক" },
-  { "hanzi": "鞭炮", "pinyin": "biānpào", "meaning": "firecracker", "bn": "পটকা" },
-  { "hanzi": "辩论", "pinyin": "biànlùn", "meaning": "debate", "bn": "বিতর্ক" },
-  { "hanzi": "标志", "pinyin": "biāozhì", "meaning": "sign", "bn": "চিহ্ন" },
-  { "hanzi": "表达", "pinyin": "biǎodá", "meaning": "expression", "bn": "প্রকাশ" },
-  { "hanzi": "表面", "pinyin": "biǎomiàn", "meaning": "surface", "bn": "পৃষ্ঠতল" },
-  { "hanzi": "表情", "pinyin": "biǎoqíng", "meaning": "expression", "bn": "অভিব্যক্তি" },
-  { "hanzi": "表现", "pinyin": "biǎoxiàn", "meaning": "performance", "bn": "প্রদর্শন" },
-  { "hanzi": "冰激凌", "pinyin": "bīngjīlíng", "meaning": "ice cream", "bn": "আইসক্রিম" },
-  { "hanzi": "玻璃", "pinyin": "bōli", "meaning": "glass", "bn": "কাঁচ" },
-  { "hanzi": "博物馆", "pinyin": "bówùguǎn", "meaning": "museum", "bn": "জাদুঘর" },
-  { "hanzi": "不断", "pinyin": "búduàn", "meaning": "constantly", "bn": "অবিরত" },
-  { "hanzi": "不见得", "pinyin": "bújiàndé", "meaning": "not necessarily", "bn": "অবশ্যই নয়" },
-  { "hanzi": "不耐烦", "pinyin": "búnàifán", "meaning": "impatient", "bn": "অধৈর্য" },
-  { "hanzi": "补充", "pinyin": "bǔchōng", "meaning": "supplement", "bn": "সম্পূরক" },
-  { "hanzi": "不然", "pinyin": "bùrán", "meaning": "otherwise", "bn": "নতুবা" },
-  { "hanzi": "不足", "pinyin": "bùzú", "meaning": "insufficient", "bn": "অপর্যাপ্ত" },
-  { "hanzi": "部门", "pinyin": "bùmén", "meaning": "department", "bn": "বিভাগ" },
-  { "hanzi": "财产", "pinyin": "cáichǎn", "meaning": "property", "bn": "সম্পত্তি" },
-  { "hanzi": "踩", "pinyin": "cǎi", "meaning": "step on", "bn": "পা দেওয়া" },
-  { "hanzi": "采取", "pinyin": "cǎiqǔ", "meaning": "take/adopt", "bn": "গ্রহণ করা" },
-  { "hanzi": "参考", "pinyin": "cānkǎo", "meaning": "reference", "bn": "উল্লেখ" },
-  { "hanzi": "操场", "pinyin": "cāochǎng", "meaning": "playground", "bn": "খেলার মাঠ" },
-  { "hanzi": "插", "pinyin": "chā", "meaning": "insert", "bn": "সন্নিবেশ" },
-  { "hanzi": "叉子", "pinyin": "chāzi", "meaning": "fork", "bn": "কাঁটা চামচ" },
-  { "hanzi": "拆", "pinyin": "chāi", "meaning": "remove", "bn": "সরিয়ে ফেলা" },
-  { "hanzi": "产生", "pinyin": "chǎnshēng", "meaning": "produce", "bn": "উৎপন্ন করা" },
-  { "hanzi": "常识", "pinyin": "chángshí", "meaning": "common sense", "bn": "সাধারণ জ্ঞান" },
-  { "hanzi": "潮湿", "pinyin": "cháoshī", "meaning": "damp", "bn": "আর্দ্র" },
-  { "hanzi": "吵", "pinyin": "chǎo", "meaning": "noisy", "bn": "চেঁচামেচি" },
-  { "hanzi": "车库", "pinyin": "chēkù", "meaning": "garage", "bn": "গ্যারেজ" },
-  { "hanzi": "彻底", "pinyin": "chèdǐ", "meaning": "thorough", "bn": "পুরোপুরি" },
-  { "hanzi": "趁", "pinyin": "chèn", "meaning": "while", "bn": "সুযোগে" },
-  { "hanzi": "称", "pinyin": "chēng", "meaning": "call", "bn": "ডাকা" },
-  { "hanzi": "称赞", "pinyin": "chēngzàn", "meaning": "praise", "bn": "প্রশংসা" },
-  { "hanzi": "承担", "pinyin": "chéngdān", "meaning": "bear", "bn": "বহন করা" },
-  { "hanzi": "承受", "pinyin": "chéngshòu", "meaning": "bear", "bn": "সহ্য করা" },
-  { "hanzi": "程序", "pinyin": "chéngxù", "meaning": "program", "bn": "প্রোগ্রাম" },
-  { "hanzi": "成立", "pinyin": "chénglì", "meaning": "establish", "bn": "প্রতিষ্ঠা করা" },
-  { "hanzi": "成人", "pinyin": "chéngrén", "meaning": "adult", "bn": "প্রাপ্তবয়স্ক" },
-  { "hanzi": "成语", "pinyin": "chéngyǔ", "meaning": "idiom", "bn": "প্রবাদ" },
-  { "hanzi": "诚恳", "pinyin": "chéngkěn", "meaning": "sincere", "bn": "আন্তরিক" },
-  { "hanzi": "持续", "pinyin": "chíxù", "meaning": "continued", "bn": "অব্যাহত" },
-  { "hanzi": "尺子", "pinyin": "chǐzi", "meaning": "ruler", "bn": "রুলার" },
-  { "hanzi": "冲", "pinyin": "chōng", "meaning": "punch", "bn": "ঘুসি" },
-  { "hanzi": "充分", "pinyin": "chōngfèn", "meaning": "to the full", "bn": "পুরোপুরি" },
-  { "hanzi": "重复", "pinyin": "chóngfù", "meaning": "repeat", "bn": "পুনরাবৃত্তি" },
-  { "hanzi": "宠物", "pinyin": "chǒngwù", "meaning": "pet", "bn": "পোষা প্রাণী" },
-  { "hanzi": "抽象", "pinyin": "chōuxiàng", "meaning": "abstract", "bn": "সংক্ষিপ্ত" },
-  { "hanzi": "丑", "pinyin": "chǒu", "meaning": "ugly", "bn": "কুৎসিত" },
-  { "hanzi": "出口", "pinyin": "chūkǒu", "meaning": "exit", "bn": "প্রস্থান" },
-  { "hanzi": "出示", "pinyin": "chūshì", "meaning": "show", "bn": "দেখানো" },
-  { "hanzi": "出席", "pinyin": "chūxí", "meaning": "attend", "bn": "উপস্থিত থাকা" },
-  { "hanzi": "除非", "pinyin": "chúfēi", "meaning": "unless", "bn": "যদি না" },
-  { "hanzi": "除夕", "pinyin": "chúxī", "meaning": "New Year's Eve", "bn": "বছরের শেষ রাত" },
-  { "hanzi": "处理", "pinyin": "chǔlǐ", "meaning": "handle", "bn": "মোকাবেলা করা" },
-  { "hanzi": "传染", "pinyin": "chuánrǎn", "meaning": "contagion", "bn": "সংক্রমণ" },
-  { "hanzi": "传统", "pinyin": "chuántǒng", "meaning": "tradition", "bn": "ঐতিহ্য" },
-  { "hanzi": "闯", "pinyin": "chuǎng", "meaning": "rush/dash", "bn": "জোরে ঢোকা" },
-  { "hanzi": "吹", "pinyin": "chuī", "meaning": "blow", "bn": "ফোঁকা" },
-  { "hanzi": "此外", "pinyin": "cǐwài", "meaning": "in addition", "bn": "এছাড়াও" },
-  { "hanzi": "次要", "pinyin": "cìyào", "meaning": "secondary", "bn": "গৌণ" },
-  { "hanzi": "匆忙", "pinyin": "cōngmáng", "meaning": "hastily", "bn": "তাড়াহুড়া করে" },
-  { "hanzi": "从而", "pinyin": "cóng'ér", "meaning": "thus", "bn": "ফলে" },
-  { "hanzi": "从前", "pinyin": "cóngqián", "meaning": "before", "bn": "আগে" },
-  { "hanzi": "粗糙", "pinyin": "cūcāo", "meaning": "rough", "bn": "মোটা" },
-  { "hanzi": "醋", "pinyin": "cù", "meaning": "vinegar", "bn": "ভিনেগার" },
-  { "hanzi": "促使", "pinyin": "cùshǐ", "meaning": "urge", "bn": "উদ্ভুব্ধ করা" },
-  { "hanzi": "措施", "pinyin": "cuòshī", "meaning": "measures", "bn": "ব্যবস্থা" },
-  { "hanzi": "打工", "pinyin": "dǎgōng", "meaning": "work (part-time)", "bn": "খণ্ডকালীন কাজ" },
-  { "hanzi": "大厦", "pinyin": "dàshà", "meaning": "large building", "bn": "বড় ভবন" },
-  { "hanzi": "大象", "pinyin": "dàxiàng", "meaning": "elephant", "bn": "হাতি" },
-  { "hanzi": "代表", "pinyin": "dàibiǎo", "meaning": "representative", "bn": "প্রতিনিধি" },
-  { "hanzi": "待遇", "pinyin": "dàiyù", "meaning": "treatment", "bn": "আচরণ" },
-  { "hanzi": "单调", "pinyin": "dāndiào", "meaning": "monotonous", "bn": "একঘেয়ে" },
-  { "hanzi": "单位", "pinyin": "dānwèi", "meaning": "company/unit", "bn": "একক" },
-  { "hanzi": "担任", "pinyin": "dānrèn", "meaning": "serve as", "bn": "দায়িত্ব নেওয়া" },
-  { "hanzi": "耽误", "pinyin": "dānwu", "meaning": "delay", "bn": "বিলম্ব" },
-  { "hanzi": "淡", "pinyin": "dàn", "meaning": "light (flavour)", "bn": "হালকা" },
-  { "hanzi": "倒霉", "pinyin": "dǎoméi", "meaning": "unlucky", "bn": "অশুভ" },
-  { "hanzi": "道理", "pinyin": "dàolǐ", "meaning": "truth/reason", "bn": "কারণ" },
-  { "hanzi": "登记", "pinyin": "dēngjì", "meaning": "register", "bn": "নিবন্ধন" },
-  { "hanzi": "等于", "pinyin": "děngyú", "meaning": "equal to", "bn": "সমান" },
-  { "hanzi": "滴", "pinyin": "dī", "meaning": "drop", "bn": "ফোঁটা" },
-  { "hanzi": "敌人", "pinyin": "dírén", "meaning": "enemy", "bn": "শত্রু" },
-  { "hanzi": "递", "pinyin": "dì", "meaning": "deliver", "bn": "পৌঁছে দেওয়া" },
-  { "hanzi": "地毯", "pinyin": "dìtǎn", "meaning": "carpet", "bn": "গালিচা" },
-  { "hanzi": "地震", "pinyin": "dìzhèn", "meaning": "earthquake", "bn": "ভূমিকম্প" },
-  { "hanzi": "电池", "pinyin": "diànchí", "meaning": "battery", "bn": "ব্যাটারি" },
-  { "hanzi": "顶", "pinyin": "dǐng", "meaning": "top", "bn": "শীর্ষ" },
-  { "hanzi": "冻", "pinyin": "dòng", "meaning": "freeze", "bn": "জমে যাওয়া" },
-  { "hanzi": "动画片", "pinyin": "dònghuàpiàn", "meaning": "cartoon", "bn": "এনিমেটেড ফিল্ম" },
-  { "hanzi": "逗", "pinyin": "dòu", "meaning": "funny", "bn": "মজার" },
-  { "hanzi": "独特", "pinyin": "dútè", "meaning": "unique", "bn": "অনন্য" },
-  { "hanzi": "度过", "pinyin": "dùguò", "meaning": "spend (time)", "bn": "কাটানো" },
-  { "hanzi": "对比", "pinyin": "duìbǐ", "meaning": "contrast", "bn": "তুলনা" },
-  { "hanzi": "对待", "pinyin": "duìdài", "meaning": "treat", "bn": "আচরণ করা" },
-  { "hanzi": "对手", "pinyin": "duìshǒu", "meaning": "opponent", "bn": "প্রতিপক্ষ" },
-  { "hanzi": "吨", "pinyin": "dūn", "meaning": "ton", "bn": "টন" },
-  { "hanzi": "顿", "pinyin": "dùn", "meaning": "meal", "bn": "খাবার" },
-  { "hanzi": "多亏", "pinyin": "duōkuī", "meaning": "thanks to", "bn": "অনেক thanks" },
-  { "hanzi": "朵", "pinyin": "duǒ", "meaning": "classifier for flower", "bn": "ফুল গণনা" },
-  { "hanzi": "发表", "pinyin": "fābiǎo", "meaning": "publish", "bn": "প্রকাশ করা" },
-  { "hanzi": "发达", "pinyin": "fādá", "meaning": "developed", "bn": "উন্নত" },
-  { "hanzi": "发挥", "pinyin": "fāhuī", "meaning": "develop", "bn": "উন্নয়ন করা" },
-  { "hanzi": "发票", "pinyin": "fāpiào", "meaning": "invoice", "bn": "রসিদ" },
-  { "hanzi": "发言", "pinyin": "fāyán", "meaning": "give a speech", "bn": "বক্তব্য দেওয়া" },
-  { "hanzi": "罚款", "pinyin": "fákuǎn", "meaning": "fine", "bn": "জরিমানা" },
-  { "hanzi": "法院", "pinyin": "fǎyuàn", "meaning": "court", "bn": "আদালত" },
-  { "hanzi": "繁荣", "pinyin": "fánróng", "meaning": "prosperous", "bn": "সমৃদ্ধ" },
-  { "hanzi": "反而", "pinyin": "fǎn'ér", "meaning": "instead", "bn": "বরং" },
-  { "hanzi": "反应", "pinyin": "fǎnyìng", "meaning": "reaction", "bn": "প্রতিক্রিয়া" },
-  { "hanzi": "反正", "pinyin": "fǎnzhèng", "meaning": "anyway", "bn": "যাইহোক" },
-  { "hanzi": "范围", "pinyin": "fànwéi", "meaning": "range", "bn": "সীমা" },
-  { "hanzi": "方案", "pinyin": "fāng'àn", "meaning": "plan", "bn": "পরিকল্পনা" },
-  { "hanzi": "方式", "pinyin": "fāngshì", "meaning": "way/manner", "bn": "পদ্ধতি" },
-  { "hanzi": "妨碍", "pinyin": "fáng'ài", "meaning": "hinder", "bn": "বাধা দেওয়া" },
-  { "hanzi": "肥皂", "pinyin": "féizào", "meaning": "soap", "bn": "সাবান" },
-  { "hanzi": "分布", "pinyin": "fēnbù", "meaning": "distribution", "bn": "বিতরণ" },
-  { "hanzi": "分手", "pinyin": "fēnshǒu", "meaning": "break up", "bn": "বিচ্ছেদ" },
-  { "hanzi": "风景", "pinyin": "fēngjǐng", "meaning": "scenery", "bn": "দৃশ্য" },
-  { "hanzi": "风险", "pinyin": "fēngxiǎn", "meaning": "risk", "bn": "ঝুঁকি" },
-  { "hanzi": "讽刺", "pinyin": "fěngcì", "meaning": "satire", "bn": "ব্যঙ্গ" },
-  { "hanzi": "否认", "pinyin": "fǒurèn", "meaning": "deny", "bn": "অস্বীকার করা" },
-  { "hanzi": "扶", "pinyin": "fú", "meaning": "hold up", "bn": "ধরে রাখা" },
-  { "hanzi": "复制", "pinyin": "fùzhì", "meaning": "copy", "bn": "কপি করা" },
-  { "hanzi": "改进", "pinyin": "gǎijìn", "meaning": "improvement", "bn": "উন্নয়ন" },
-  { "hanzi": "改正", "pinyin": "gǎizhèng", "meaning": "correction", "bn": "সংশোধন" },
-  { "hanzi": "概括", "pinyin": "gàikuò", "meaning": "summary", "bn": "সারসংক্ষেপ" },
-  { "hanzi": "感想", "pinyin": "gǎnxiǎng", "meaning": "impression", "bn": "অনুভূতি" },
-  { "hanzi": "赶快", "pinyin": "gǎnkuài", "meaning": "hurry up", "bn": "তাড়াতাড়ি করো" },
-  { "hanzi": "干活儿", "pinyin": "gànhuór", "meaning": "do manual work", "bn": "কাজ করা" },
-  { "hanzi": "高级", "pinyin": "gāojí", "meaning": "senior", "bn": "উচ্চস্তরের" },
-  { "hanzi": "告别", "pinyin": "gàobié", "meaning": "farewell", "bn": "বিদায়" },
-  { "hanzi": "隔壁", "pinyin": "gébì", "meaning": "next door", "bn": "পাশের ঘর" },
-  { "hanzi": "个人", "pinyin": "gèrén", "meaning": "personal", "bn": "ব্যক্তিগত" },
-  { "hanzi": "各自", "pinyin": "gèzì", "meaning": "each", "bn": "প্রত্যেক" },
-  { "hanzi": "根本", "pinyin": "gēnběn", "meaning": "at all", "bn": "মোটেও" },
-  { "hanzi": "公开", "pinyin": "gōngkāi", "meaning": "open", "bn": "খোলা" },
-  { "hanzi": "公平", "pinyin": "gōngpíng", "meaning": "fair", "bn": "ন্যায্য" },
-  { "hanzi": "公寓", "pinyin": "gōngyù", "meaning": "apartment", "bn": "অ্যাপার্টমেন্ট" },
-  { "hanzi": "工厂", "pinyin": "gōngchǎng", "meaning": "factory", "bn": "কারখানা" },
-  { "hanzi": "工具", "pinyin": "gōngjù", "meaning": "tool", "bn": "যন্ত্র" },
-  { "hanzi": "工业", "pinyin": "gōngyè", "meaning": "industry", "bn": "শিল্প" },
-  { "hanzi": "功能", "pinyin": "gōngnéng", "meaning": "function", "bn": "কার্যকারিতা" },
-  { "hanzi": "沟通", "pinyin": "gōutōng", "meaning": "communicate", "bn": "যোগাযোগ" },
-  { "hanzi": "姑娘", "pinyin": "gūniang", "meaning": "girl", "bn": "মেয়ে" },
-  { "hanzi": "古代", "pinyin": "gǔdài", "meaning": "ancient", "bn": "প্রাচীন" },
-  { "hanzi": "鼓掌", "pinyin": "gǔzhǎng", "meaning": "applaud", "bn": "হাততালি" },
-  { "hanzi": "骨头", "pinyin": "gǔtou", "meaning": "bone", "bn": "হাড়" },
-  { "hanzi": "乖", "pinyin": "guāi", "meaning": "well-behaved", "bn": "ভদ্র" },
-  { "hanzi": "怪不得", "pinyin": "guàibude", "meaning": "no wonder", "bn": "অবাক হওয়ার কিছু নেই" },
-  { "hanzi": "观察", "pinyin": "guānchá", "meaning": "observe", "bn": "পর্যবেক্ষণ" },
-  { "hanzi": "观念", "pinyin": "guānniàn", "meaning": "concept", "bn": "ধারণা" },
-  { "hanzi": "冠军", "pinyin": "guànjūn", "meaning": "champion", "bn": "চ্যাম্পিয়ন" },
-  { "hanzi": "光滑", "pinyin": "guānghuá", "meaning": "smooth", "bn": "মসৃণ" },
-  { "hanzi": "光明", "pinyin": "guāngmíng", "meaning": "bright", "bn": "উজ্জ্বল" },
-  { "hanzi": "广大", "pinyin": "guǎngdà", "meaning": "vast", "bn": "বিশাল" },
-  { "hanzi": "规律", "pinyin": "guīlǜ", "meaning": "law/rule", "bn": "নিয়ম" },
-  { "hanzi": "规则", "pinyin": "guīzé", "meaning": "rule", "bn": "নিয়ম" },
-  { "hanzi": "滚", "pinyin": "gǔn", "meaning": "roll", "bn": "গড়ানো" },
-  { "hanzi": "国庆节", "pinyin": "guóqìngjié", "meaning": "National Day", "bn": "জাতীয় দিবস" },
-  { "hanzi": "果实", "pinyin": "guǒshí", "meaning": "fruit", "bn": "ফল" },
-  { "hanzi": "过敏", "pinyin": "guòmǐn", "meaning": "allergy", "bn": "এলার্জি" },
-  { "hanzi": "海鲜", "pinyin": "hǎixiān", "meaning": "seafood", "bn": "সামুদ্রিক খাবার" },
-  { "hanzi": "豪华", "pinyin": "háohuá", "meaning": "luxury", "bn": "বিলাসবহুল" },
-  { "hanzi": "好奇", "pinyin": "hàoqí", "meaning": "curious", "bn": "অতি উৎসুক" },
-  { "hanzi": "何必", "pinyin": "hébì", "meaning": "why bother", "bn": "কেন ঝামেলা" },
-  { "hanzi": "合法", "pinyin": "héfǎ", "meaning": "legal", "bn": "আইনসম্মত" },
-  { "hanzi": "合理", "pinyin": "hélǐ", "meaning": "reasonable", "bn": "যুক্তিসঙ্গত" },
-  { "hanzi": "合同", "pinyin": "hétong", "meaning": "contract", "bn": "চুক্তি" },
-  { "hanzi": "合作", "pinyin": "hézuò", "meaning": "cooperation", "bn": "সহযোগিতা" },
-  { "hanzi": "恨", "pinyin": "hèn", "meaning": "hate", "bn": "ঘৃণা" },
-  { "hanzi": "猴子", "pinyin": "hóuzi", "meaning": "monkey", "bn": "বানর" },
-  { "hanzi": "后背", "pinyin": "hòubèi", "meaning": "back", "bn": "পিঠ" },
-  { "hanzi": "忽视", "pinyin": "hūshì", "meaning": "ignore", "bn": "উপেক্ষা করা" },
-  { "hanzi": "壶", "pinyin": "hú", "meaning": "pot", "bn": "পাতিল" },
-  { "hanzi": "胡说", "pinyin": "húshuō", "meaning": "nonsense", "bn": "আজেবাজে কথা" },
-  { "hanzi": "糊涂", "pinyin": "hútu", "meaning": "confused", "bn": "বিভ্রান্ত" },
-  { "hanzi": "花生", "pinyin": "huāshēng", "meaning": "peanut", "bn": "চিনাবাদাম" },
-  { "hanzi": "划", "pinyin": "huá", "meaning": "row (boat)", "bn": "চেপে যাওয়া" },
-  { "hanzi": "话题", "pinyin": "huàtí", "meaning": "topic", "bn": "আলোচ্য বিষয়" },
-  { "hanzi": "怀念", "pinyin": "huáiniàn", "meaning": "miss", "bn": "স্মরণ করা" },
-  { "hanzi": "怀孕", "pinyin": "huáiyùn", "meaning": "pregnant", "bn": "গর্ভবতী" },
-  { "hanzi": "慌张", "pinyin": "huāngzhāng", "meaning": "flustered", "bn": "বিহ্বল" },
-  { "hanzi": "黄金", "pinyin": "huángjīn", "meaning": "gold", "bn": "সোনা" },
-  { "hanzi": "灰", "pinyin": "huī", "meaning": "ash", "bn": "ছাই" },
-  { "hanzi": "灰心", "pinyin": "huīxīn", "meaning": "discouraged", "bn": "হতাশ" },
-  { "hanzi": "婚礼", "pinyin": "hūnlǐ", "meaning": "wedding", "bn": "বিয়ের অনুষ্ঠান" },
-  { "hanzi": "活跃", "pinyin": "huóyuè", "meaning": "active", "bn": "সক্রিয়" },
-  { "hanzi": "伙伴", "pinyin": "huǒbàn", "meaning": "partner", "bn": "সঙ্গী" },
-  { "hanzi": "或许", "pinyin": "huòxǔ", "meaning": "maybe", "bn": "হয়তো" },
-  { "hanzi": "基本", "pinyin": "jīběn", "meaning": "basic", "bn": "মৌলিক" },
-  { "hanzi": "机器", "pinyin": "jīqì", "meaning": "machine", "bn": "যন্ত্র" },
-  { "hanzi": "及格", "pinyin": "jígé", "meaning": "pass (exam)", "bn": "পাস করা" },
-  { "hanzi": "集合", "pinyin": "jíhé", "meaning": "gather", "bn": "জড়ো করা" },
-  { "hanzi": "集中", "pinyin": "jízhōng", "meaning": "focus", "bn": "মনোনিবেশ" },
-  { "hanzi": "急诊", "pinyin": "jízhěn", "meaning": "emergency", "bn": "জরুরি" },
-  { "hanzi": "记忆", "pinyin": "jìyì", "meaning": "memory", "bn": "স্মৃতি" },
-  { "hanzi": "纪录", "pinyin": "jìlù", "meaning": "record", "bn": "রেকর্ড" },
-  { "hanzi": "纪念", "pinyin": "jìniàn", "meaning": "commemorate", "bn": "স্মরণ করা" },
-  { "hanzi": "家务", "pinyin": "jiāwù", "meaning": "housework", "bn": "গৃহকাজ" },
-  { "hanzi": "嘉宾", "pinyin": "jiābīn", "meaning": "distinguished guest", "bn": "বিশিষ্ট অতিথি" },
-  { "hanzi": "甲", "pinyin": "jiǎ", "meaning": "nail; first", "bn": "নখ; প্রথম" },
-  { "hanzi": "假如", "pinyin": "jiǎrú", "meaning": "if", "bn": "যদি" },
-  { "hanzi": "假装", "pinyin": "jiǎzhuāng", "meaning": "pretend", "bn": "ভান করা" },
-  { "hanzi": "驾驶", "pinyin": "jiàshǐ", "meaning": "drive", "bn": "চালানো" },
-  { "hanzi": "坚强", "pinyin": "jiānqiáng", "meaning": "strong", "bn": "দৃঢ়" },
-  { "hanzi": "艰苦", "pinyin": "jiānkǔ", "meaning": "hard", "bn": "কঠিন" },
-  { "hanzi": "捡", "pinyin": "jiǎn", "meaning": "pick up", "bn": "তুলে নেওয়া" },
-  { "hanzi": "简直", "pinyin": "jiǎnzhí", "meaning": "simply", "bn": "প্রায়" },
-  { "hanzi": "健身", "pinyin": "jiànshēn", "meaning": "work out", "bn": "শরীরচর্চা" },
-  { "hanzi": "建设", "pinyin": "jiànshè", "meaning": "build", "bn": "নির্মাণ" },
-  { "hanzi": "建筑", "pinyin": "jiànzhù", "meaning": "architecture", "bn": "স্থাপত্য" },
-  { "hanzi": "键盘", "pinyin": "jiànpán", "meaning": "keyboard", "bn": "কীবোর্ড" },
-  { "hanzi": "讲座", "pinyin": "jiǎngzuò", "meaning": "lecture", "bn": "বক্তৃতা" },
-  { "hanzi": "酱油", "pinyin": "jiàngyóu", "meaning": "soy sauce", "bn": "সয় সস" },
-  { "hanzi": "浇", "pinyin": "jiāo", "meaning": "pour", "bn": "ঢালা" },
-  { "hanzi": "交换", "pinyin": "jiāohuàn", "meaning": "exchange", "bn": "বিনিময়" },
-  { "hanzi": "交往", "pinyin": "jiāowǎng", "meaning": "associate", "bn": "মেলামেশা" },
-  { "hanzi": "角度", "pinyin": "jiǎodù", "meaning": "angle", "bn": "কোণ" },
-  { "hanzi": "教材", "pinyin": "jiàocái", "meaning": "teaching material", "bn": "শিক্ষা উপকরণ" },
-  { "hanzi": "教训", "pinyin": "jiàoxùn", "meaning": "lesson", "bn": "শিক্ষা" },
-  { "hanzi": "接待", "pinyin": "jiēdài", "meaning": "reception", "bn": "অভ্যর্থনা" },
-  { "hanzi": "结实", "pinyin": "jiēshi", "meaning": "strong", "bn": "মজবুত" },
-  { "hanzi": "节省", "pinyin": "jiéshěng", "meaning": "save", "bn": "সংরক্ষণ" },
-  { "hanzi": "结构", "pinyin": "jiégòu", "meaning": "structure", "bn": "গঠন" },
-  { "hanzi": "结合", "pinyin": "jiéhé", "meaning": "combine", "bn": "মিলিত করা" },
-  { "hanzi": "结论", "pinyin": "jiélùn", "meaning": "conclusion", "bn": "উপসংহার" },
-  { "hanzi": "结账", "pinyin": "jiézhàng", "meaning": "check out", "bn": "বিল পরিশোধ" },
-  { "hanzi": "届", "pinyin": "jiè", "meaning": "session", "bn": "অধিবেশন" },
-  { "hanzi": "借口", "pinyin": "jièkǒu", "meaning": "excuse", "bn": "ছুতা" },
-  { "hanzi": "戒", "pinyin": "jiè", "meaning": "quit", "bn": "ত্যাগ করা" },
-  { "hanzi": "紧急", "pinyin": "jǐnjí", "meaning": "urgent", "bn": "জরুরি" },
-  { "hanzi": "尽快", "pinyin": "jǐnkuài", "meaning": "as soon as possible", "bn": "যত তাড়াতাড়ি সম্ভব" },
-  { "hanzi": "谨慎", "pinyin": "jǐnshèn", "meaning": "cautious", "bn": "সতর্ক" },
-  { "hanzi": "进步", "pinyin": "jìnbù", "meaning": "progress", "bn": "অগ্রগতি" },
-  { "hanzi": "近代", "pinyin": "jìndài", "meaning": "modern", "bn": "আধুনিক" },
-  { "hanzi": "尽量", "pinyin": "jǐnliàng", "meaning": "as much as possible", "bn": "যতটা সম্ভব" },
-  { "hanzi": "精神", "pinyin": "jīngshén", "meaning": "spirit", "bn": "মনোবল" },
-  { "hanzi": "经典", "pinyin": "jīngdiǎn", "meaning": "classic", "bn": "ক্লাসিক" },
-  { "hanzi": "救", "pinyin": "jiù", "meaning": "save", "bn": "বাঁচানো" },
-  { "hanzi": "舅舅", "pinyin": "jiùjiu", "meaning": "uncle", "bn": "মামা" },
-  { "hanzi": "桔子", "pinyin": "júzi", "meaning": "orange", "bn": "কমলা" },
-  { "hanzi": "具备", "pinyin": "jùbèi", "meaning": "possess", "bn": "অধিকারী হওয়া" },
-  { "hanzi": "巨大", "pinyin": "jùdà", "meaning": "huge", "bn": "বিশাল" },
-  { "hanzi": "决赛", "pinyin": "juésài", "meaning": "finals", "bn": "চূড়ান্ত খেলা" },
-  { "hanzi": "绝对", "pinyin": "juéduì", "meaning": "absolute", "bn": "সম্পূর্ণ" },
-  { "hanzi": "军事", "pinyin": "jūnshì", "meaning": "military", "bn": "সামরিক" },
-  { "hanzi": "开放", "pinyin": "kāifàng", "meaning": "open up", "bn": "উন্মুক্ত করা" },
-  { "hanzi": "开水", "pinyin": "kāishuǐ", "meaning": "boiling water", "bn": "ফুটন্ত পানি" },
-  { "hanzi": "砍", "pinyin": "kǎn", "meaning": "cut", "bn": "কাটা" },
-  { "hanzi": "看不起", "pinyin": "kànbuqǐ", "meaning": "despise", "bn": "অবজ্ঞা করা" },
-  { "hanzi": "可见", "pinyin": "kějiàn", "meaning": "it is clear", "bn": "স্পষ্ট" },
-  { "hanzi": "可怕", "pinyin": "kěpà", "meaning": "terrible", "bn": "ভয়াবহ" },
-  { "hanzi": "克", "pinyin": "kè", "meaning": "gram", "bn": "গ্রাম" },
-  { "hanzi": "客观", "pinyin": "kèguān", "meaning": "objective", "bn": "বাস্তবভিত্তিক" },
-  { "hanzi": "控制", "pinyin": "kòngzhì", "meaning": "control", "bn": "নিয়ন্ত্রণ" },
-  { "hanzi": "口味", "pinyin": "kǒuwèi", "meaning": "flavour", "bn": "স্বাদ" },
-  { "hanzi": "夸", "pinyin": "kuā", "meaning": "boast", "bn": "গর্ব করা" },
-  { "hanzi": "扩大", "pinyin": "kuòdà", "meaning": "expand", "bn": "সম্প্রসারণ" },
-  { "hanzi": "辣椒", "pinyin": "làjiāo", "meaning": "chilli", "bn": "মরিচ" },
-  { "hanzi": "烂", "pinyin": "làn", "meaning": "rotten", "bn": "পচা" },
-  { "hanzi": "劳动", "pinyin": "láodòng", "meaning": "labour", "bn": "শ্রম" },
-  { "hanzi": "老板", "pinyin": "lǎobǎn", "meaning": "boss", "bn": "মালিক" },
-  { "hanzi": "老鼠", "pinyin": "lǎoshǔ", "meaning": "mouse", "bn": "ইঁদুর" },
-  { "hanzi": "姥姥", "pinyin": "lǎolao", "meaning": "grandma", "bn": "নানি" },
-  { "hanzi": "理论", "pinyin": "lǐlùn", "meaning": "theory", "bn": "তত্ত্ব" },
-  { "hanzi": "理由", "pinyin": "lǐyóu", "meaning": "reason", "bn": "কারণ" },
-  { "hanzi": "立刻", "pinyin": "lìkè", "meaning": "immediately", "bn": "তৎক্ষণাৎ" },
-  { "hanzi": "力量", "pinyin": "lìliàng", "meaning": "power", "bn": "শক্তি" },
-  { "hanzi": "利息", "pinyin": "lìxī", "meaning": "interest", "bn": "সুদ" },
-  { "hanzi": "利用", "pinyin": "lìyòng", "meaning": "utilize", "bn": "ব্যবহার করা" },
-  { "hanzi": "连忙", "pinyin": "liánmáng", "meaning": "hurriedly", "bn": "তাড়াহুড়া করে" },
-  { "hanzi": "联合", "pinyin": "liánhé", "meaning": "union", "bn": "জোট" },
-  { "hanzi": "了不起", "pinyin": "liǎobuqǐ", "meaning": "amazing", "bn": "অসাধারণ" },
-  { "hanzi": "列车", "pinyin": "lièchē", "meaning": "train", "bn": "ট্রেন" },
-  { "hanzi": "临时", "pinyin": "línshí", "meaning": "temporary", "bn": "অস্থায়ী" },
-  { "hanzi": "灵活", "pinyin": "línghuó", "meaning": "flexible", "bn": "নমনীয়" },
-  { "hanzi": "领域", "pinyin": "lǐngyù", "meaning": "field", "bn": "ক্ষেত্র" },
-  { "hanzi": "流传", "pinyin": "liúchuán", "meaning": "spread", "bn": "ছড়িয়ে পড়া" },
-  { "hanzi": "浏览", "pinyin": "liúlǎn", "meaning": "browse", "bn": "ব্রাউজ করা" },
-  { "hanzi": "龙", "pinyin": "lóng", "meaning": "dragon", "bn": "ড্রাগন" },
-  { "hanzi": "漏", "pinyin": "lòu", "meaning": "leak", "bn": "ফাঁক" },
-  { "hanzi": "陆地", "pinyin": "lùdì", "meaning": "land", "bn": "স্থল" },
-  { "hanzi": "录取", "pinyin": "lùqǔ", "meaning": "admit", "bn": "ভর্তি করা" },
-  { "hanzi": "论文", "pinyin": "lùnwén", "meaning": "thesis", "bn": "প্রবন্ধ" },
-  { "hanzi": "落后", "pinyin": "luòhòu", "meaning": "backward", "bn": "পিছিয়ে পড়া" },
-  { "hanzi": "骂", "pinyin": "mà", "meaning": "scold", "bn": "গালি দেওয়া" },
-  { "hanzi": "麦克风", "pinyin": "màikèfēng", "meaning": "microphone", "bn": "মাইক্রোফোন" },
-  { "hanzi": "满足", "pinyin": "mǎnzú", "meaning": "satisfy", "bn": "সন্তুষ্ট করা" },
-  { "hanzi": "冒险", "pinyin": "màoxiǎn", "meaning": "adventure", "bn": "দুঃসাহসিক কাজ" },
-  { "hanzi": "眉毛", "pinyin": "méimao", "meaning": "eyebrow", "bn": "ভ্রু" },
-  { "hanzi": "美术", "pinyin": "měishù", "meaning": "fine arts", "bn": "চিত্রকলা" },
-  { "hanzi": "秘密", "pinyin": "mìmì", "meaning": "secret", "bn": "গোপন" },
-  { "hanzi": "面对", "pinyin": "miànduì", "meaning": "face", "bn": "মুখোমুখি হওয়া" },
-  { "hanzi": "面临", "pinyin": "miànlín", "meaning": "be faced with", "bn": "সম্মুখীন হওয়া" },
-  { "hanzi": "苗条", "pinyin": "miáotiao", "meaning": "slim", "bn": "স্লিম" },
-  { "hanzi": "明确", "pinyin": "míngquè", "meaning": "make clear", "bn": "স্পষ্ট করা" },
-  { "hanzi": "明显", "pinyin": "míngxiǎn", "meaning": "obvious", "bn": "স্পষ্ট" },
-  { "hanzi": "名牌", "pinyin": "míngpái", "meaning": "famous brand", "bn": "ব্র্যান্ড" },
-  { "hanzi": "名胜古迹", "pinyin": "míngshènggǔjì", "meaning": "scenic spot", "bn": "দর্শনীয় স্থান" },
-  { "hanzi": "命令", "pinyin": "mìnglìng", "meaning": "order", "bn": "আদেশ" },
-  { "hanzi": "摸", "pinyin": "mō", "meaning": "feel/touch", "bn": "স্পর্শ করা" },
-  { "hanzi": "模糊", "pinyin": "móhu", "meaning": "vague", "bn": "অস্পষ্ট" },
-  { "hanzi": "摩托车", "pinyin": "mótuōchē", "meaning": "motorcycle", "bn": "মোটরসাইকেল" },
-  { "hanzi": "某", "pinyin": "mǒu", "meaning": "some", "bn": "কিছু" },
-  { "hanzi": "目标", "pinyin": "mùbiāo", "meaning": "target", "bn": "লক্ষ্য" },
-  { "hanzi": "目录", "pinyin": "mùlù", "meaning": "catalogue", "bn": "ক্যাটালগ" },
-  { "hanzi": "木头", "pinyin": "mùtou", "meaning": "wood", "bn": "কাঠ" },
-  { "hanzi": "哪怕", "pinyin": "nǎpà", "meaning": "even if", "bn": "এমনকি যদি" },
-  { "hanzi": "难免", "pinyin": "nánmiǎn", "meaning": "hard to avoid", "bn": "এড়ানো কঠিন" },
-  { "hanzi": "脑袋", "pinyin": "nǎodai", "meaning": "head", "bn": "মাথা" },
-  { "hanzi": "内科", "pinyin": "nèikē", "meaning": "internal medicine", "bn": "অন্তঃচিকিৎসা" },
-  { "hanzi": "嫩", "pinyin": "nèn", "meaning": "tender", "bn": "নরম" },
-  { "hanzi": "能干", "pinyin": "nénggàn", "meaning": "capable", "bn": "সক্ষম" },
-  { "hanzi": "能源", "pinyin": "néngyuán", "meaning": "energy source", "bn": "শক্তির উৎস" },
-  { "hanzi": "年代", "pinyin": "niándài", "meaning": "era", "bn": "যুগ" },
-  { "hanzi": "年纪", "pinyin": "niánjì", "meaning": "age", "bn": "বয়স" },
-  { "hanzi": "宁可", "pinyin": "nìngkě", "meaning": "would rather", "bn": "বরং" },
-  { "hanzi": "牛仔裤", "pinyin": "niúzǎikù", "meaning": "jeans", "bn": "জিন্স" },
-  { "hanzi": "农村", "pinyin": "nóngcūn", "meaning": "countryside", "bn": "গ্রাম" },
-  { "hanzi": "农业", "pinyin": "nóngyè", "meaning": "agriculture", "bn": "কৃষি" },
-  { "hanzi": "女士", "pinyin": "nǚshì", "meaning": "madam", "bn": "মহিলা" },
-  { "hanzi": "派", "pinyin": "pài", "meaning": "send", "bn": "পাঠানো" },
-  { "hanzi": "赔偿", "pinyin": "péicháng", "meaning": "compensate", "bn": "ক্ষতিপূরণ" },
-  { "hanzi": "培养", "pinyin": "péiyǎng", "meaning": "cultivate", "bn": "গঠন করা" },
-  { "hanzi": "配合", "pinyin": "pèihé", "meaning": "coordinate", "bn": "সমন্বয়" },
-  { "hanzi": "披", "pinyin": "pī", "meaning": "drape", "bn": "জড়িয়ে ধরা" },
-  { "hanzi": "片面", "pinyin": "piànmiàn", "meaning": "one-sided", "bn": "একপেশে" },
-  { "hanzi": "拼音", "pinyin": "pīnyīn", "meaning": "pinyin", "bn": "পিনইয়িন" },
-  { "hanzi": "平", "pinyin": "píng", "meaning": "flat", "bn": "সমতল" },
-  { "hanzi": "平常", "pinyin": "píngcháng", "meaning": "usual", "bn": "সাধারণ" },
-  { "hanzi": "平方", "pinyin": "píngfāng", "meaning": "square", "bn": "বর্গ" },
-  { "hanzi": "平静", "pinyin": "píngjìng", "meaning": "calm", "bn": "শান্ত" },
-  { "hanzi": "评价", "pinyin": "píngjià", "meaning": "evaluate", "bn": "মূল্যায়ন" },
-  { "hanzi": "破坏", "pinyin": "pòhuài", "meaning": "destruction", "bn": "ধ্বংস" },
-  { "hanzi": "期待", "pinyin": "qīdài", "meaning": "expect", "bn": "আশা করা" },
-  { "hanzi": "奇迹", "pinyin": "qíjì", "meaning": "miracle", "bn": "অলৌকিক ঘটনা" },
-  { "hanzi": "启发", "pinyin": "qǐfā", "meaning": "inspire", "bn": "উদ্বুদ্ধ করা" },
-  { "hanzi": "气氛", "pinyin": "qìfēn", "meaning": "atmosphere", "bn": "পরিবেশ" },
-  { "hanzi": "汽油", "pinyin": "qìyóu", "meaning": "petrol", "bn": "পেট্রোল" },
-  { "hanzi": "谦虚", "pinyin": "qiānxū", "meaning": "modest", "bn": "নম্র" },
-  { "hanzi": "签", "pinyin": "qiān", "meaning": "sign", "bn": "স্বাক্ষর করা" },
-  { "hanzi": "浅", "pinyin": "qiǎn", "meaning": "shallow", "bn": "অগভীর" },
-  { "hanzi": "枪", "pinyin": "qiāng", "meaning": "gun", "bn": "বন্দুক" },
-  { "hanzi": "强调", "pinyin": "qiángdiào", "meaning": "emphasize", "bn": "জোর দেওয়া" },
-  { "hanzi": "抢", "pinyin": "qiǎng", "meaning": "rob", "bn": "ছিনিয়ে নেওয়া" },
-  { "hanzi": "悄悄", "pinyin": "qiāoqiāo", "meaning": "quietly", "bn": "নীরবে" },
-  { "hanzi": "瞧", "pinyin": "qiáo", "meaning": "look", "bn": "দেখা" },
-  { "hanzi": "巧妙", "pinyin": "qiǎomiào", "meaning": "clever", "bn": "চতুর" },
-  { "hanzi": "亲爱", "pinyin": "qīn'ài", "meaning": "dear", "bn": "প্রিয়" },
-  { "hanzi": "亲切", "pinyin": "qīnqiè", "meaning": "kind", "bn": "স্নেহশীল" },
-  { "hanzi": "勤奋", "pinyin": "qínfèn", "meaning": "hardworking", "bn": "পরিশ্রমী" },
-  { "hanzi": "青春", "pinyin": "qīngchūn", "meaning": "youth", "bn": "যৌবন" },
-  { "hanzi": "轻视", "pinyin": "qīngshì", "meaning": "despise", "bn": "অবজ্ঞা করা" },
-  { "hanzi": "请求", "pinyin": "qǐngqiú", "meaning": "request", "bn": "অনুরোধ" },
-  { "hanzi": "球迷", "pinyin": "qiúmí", "meaning": "fan", "bn": "ভক্ত" },
-  { "hanzi": "趋势", "pinyin": "qūshì", "meaning": "trend", "bn": "প্রবণতা" },
-  { "hanzi": "去世", "pinyin": "qùshì", "meaning": "pass away", "bn": "প্রয়াত হওয়া" },
-  { "hanzi": "权力", "pinyin": "quánlì", "meaning": "power", "bn": "ক্ষমতা" },
-  { "hanzi": "劝", "pinyin": "quàn", "meaning": "persuade", "bn": "উপদেশ দেওয়া" },
-  { "hanzi": "缺乏", "pinyin": "quēfá", "meaning": "lack", "bn": "অভাব" },
-  { "hanzi": "确认", "pinyin": "quèrèn", "meaning": "confirm", "bn": "নিশ্চিত করা" },
-  { "hanzi": "群", "pinyin": "qún", "meaning": "group", "bn": "দল" },
-  { "hanzi": "燃烧", "pinyin": "ránshāo", "meaning": "burn", "bn": "জ্বলা" },
-  { "hanzi": "绕", "pinyin": "rào", "meaning": "go around", "bn": "ঘোরা" },
-  { "hanzi": "热爱", "pinyin": "rè'ài", "meaning": "ardently love", "bn": "গভীর ভালোবাসা" },
-  { "hanzi": "热心", "pinyin": "rèxīn", "meaning": "enthusiastic", "bn": "উৎসাহী" },
-  { "hanzi": "人才", "pinyin": "réncái", "meaning": "talented person", "bn": "মেধাবী" },
-  { "hanzi": "人类", "pinyin": "rénlèi", "meaning": "human beings", "bn": "মানবজাতি" },
-  { "hanzi": "人生", "pinyin": "rénshēng", "meaning": "life", "bn": "জীবন" },
-  { "hanzi": "人物", "pinyin": "rénwù", "meaning": "character", "bn": "চরিত্র" },
-  { "hanzi": "忍不住", "pinyin": "rěnbuzhù", "meaning": "cannot help", "bn": "সহ্য করতে না পারা" },
-  { "hanzi": "日程", "pinyin": "rìchéng", "meaning": "schedule", "bn": "তালিকা" },
-  { "hanzi": "日历", "pinyin": "rìlì", "meaning": "calendar", "bn": "পঞ্জিকা" },
-  { "hanzi": "日用品", "pinyin": "rìyòngpǐn", "meaning": "daily necessities", "bn": "দৈনন্দিন জিনিস" },
-  { "hanzi": "如何", "pinyin": "rúhé", "meaning": "how", "bn": "কিভাবে" },
-  { "hanzi": "软件", "pinyin": "ruǎnjiàn", "meaning": "software", "bn": "সফটওয়্যার" },
-  { "hanzi": "洒", "pinyin": "sǎ", "meaning": "sprinkle", "bn": "ছিটানো" },
-  { "hanzi": "嗓子", "pinyin": "sǎngzi", "meaning": "throat", "bn": "গলা" },
-  { "hanzi": "沙滩", "pinyin": "shātān", "meaning": "beach", "bn": "সমুদ্রতট" },
-  { "hanzi": "晒", "pinyin": "shài", "meaning": "sunbathe", "bn": "রোদে পোড়া" },
-  { "hanzi": "闪电", "pinyin": "shǎndiàn", "meaning": "lightning", "bn": "বজ্রপাত" },
-  { "hanzi": "善于", "pinyin": "shànyú", "meaning": "be good at", "bn": "দক্ষ হওয়া" },
-  { "hanzi": "商品", "pinyin": "shāngpǐn", "meaning": "commodity", "bn": "পণ্য" },
-  { "hanzi": "商务", "pinyin": "shāngwù", "meaning": "business", "bn": "ব্যবসা" },
-  { "hanzi": "伤害", "pinyin": "shānghài", "meaning": "hurt", "bn": "ক্ষতি করা" },
-  { "hanzi": "舍不得", "pinyin": "shěbude", "meaning": "hate to part", "bn": "ছাড়তে ইচ্ছা না করা" },
-  { "hanzi": "设计", "pinyin": "shèjì", "meaning": "design", "bn": "নকশা" },
-  { "hanzi": "摄影", "pinyin": "shèyǐng", "meaning": "photography", "bn": "আলোকচিত্র" },
-  { "hanzi": "伸", "pinyin": "shēn", "meaning": "stretch", "bn": "প্রসারিত করা" },
-  { "hanzi": "深刻", "pinyin": "shēnkè", "meaning": "profound", "bn": "গভীর" },
-  { "hanzi": "身份", "pinyin": "shēnfèn", "meaning": "identity", "bn": "পরিচয়" },
-  { "hanzi": "神秘", "pinyin": "shénmì", "meaning": "mysterious", "bn": "রহস্যময়" },
-  { "hanzi": "生动", "pinyin": "shēngdòng", "meaning": "vivid", "bn": "প্রাণবন্ত" },
-  { "hanzi": "生长", "pinyin": "shēngzhǎng", "meaning": "grow", "bn": "বৃদ্ধি পাওয়া" },
-  { "hanzi": "诗", "pinyin": "shī", "meaning": "poem", "bn": "কবিতা" },
-  { "hanzi": "失眠", "pinyin": "shīmián", "meaning": "insomnia", "bn": "ঘুম না আসা" },
-  { "hanzi": "狮子", "pinyin": "shīzi", "meaning": "lion", "bn": "সিংহ" },
-  { "hanzi": "时代", "pinyin": "shídài", "meaning": "era", "bn": "যুগ" },
-  { "hanzi": "时髦", "pinyin": "shímáo", "meaning": "fashionable", "bn": "ফ্যাশনেবল" },
-  { "hanzi": "时尚", "pinyin": "shíshàng", "meaning": "fashion", "bn": "ফ্যাশন" },
-  { "hanzi": "实习", "pinyin": "shíxí", "meaning": "internship", "bn": "ইন্টার্নশিপ" },
-  { "hanzi": "实验", "pinyin": "shíyàn", "meaning": "experiment", "bn": "পরীক্ষা" },
-  { "hanzi": "石头", "pinyin": "shítou", "meaning": "stone", "bn": "পাথর" },
-  { "hanzi": "使劲儿", "pinyin": "shǐjìnr", "meaning": "exert strength", "bn": "জোর লাগানো" },
-  { "hanzi": "始终", "pinyin": "shǐzhōng", "meaning": "throughout", "bn": "শুরু থেকে শেষ" },
-  { "hanzi": "试卷", "pinyin": "shìjuàn", "meaning": "test paper", "bn": "প্রশ্নপত্র" },
-  { "hanzi": "市场", "pinyin": "shìchǎng", "meaning": "market", "bn": "বাজার" },
-  { "hanzi": "事物", "pinyin": "shìwù", "meaning": "thing", "bn": "জিনিস" },
-  { "hanzi": "收据", "pinyin": "shōujù", "meaning": "receipt", "bn": "রসিদ" },
-  { "hanzi": "手工", "pinyin": "shǒugōng", "meaning": "manual", "bn": "হাতে তৈরি" },
-  { "hanzi": "手术", "pinyin": "shǒushù", "meaning": "operation", "bn": "অপারেশন" },
-  { "hanzi": "手续", "pinyin": "shǒuxù", "meaning": "procedure", "bn": "প্রক্রিয়া" },
-  { "hanzi": "首", "pinyin": "shǒu", "meaning": "head/chief", "bn": "প্রধান" },
-  { "hanzi": "受伤", "pinyin": "shòushāng", "meaning": "injured", "bn": "আহত" },
-  { "hanzi": "寿命", "pinyin": "shòumìng", "meaning": "lifespan", "bn": "জীবনকাল" },
-  { "hanzi": "书架", "pinyin": "shūjià", "meaning": "bookshelf", "bn": "বইয়ের তাক" },
-  { "hanzi": "输入", "pinyin": "shūrù", "meaning": "input", "bn": "ইনপুট" },
-  { "hanzi": "熟练", "pinyin": "shúliàn", "meaning": "skilled", "bn": "দক্ষ" },
-  { "hanzi": "鼠标", "pinyin": "shǔbiāo", "meaning": "mouse", "bn": "মাউস" },
-  { "hanzi": "数据", "pinyin": "shùjù", "meaning": "data", "bn": "তথ্য" },
-  { "hanzi": "数码", "pinyin": "shùmǎ", "meaning": "digital", "bn": "ডিজিটাল" },
-  { "hanzi": "摔倒", "pinyin": "shuāidǎo", "meaning": "fall down", "bn": "পড়ে যাওয়া" },
-  { "hanzi": "双方", "pinyin": "shuāngfāng", "meaning": "both sides", "bn": "উভয় পক্ষ" },
-  { "hanzi": "税", "pinyin": "shuì", "meaning": "tax", "bn": "কর" },
-  { "hanzi": "说服", "pinyin": "shuōfú", "meaning": "persuade", "bn": "বোঝানো" },
-  { "hanzi": "丝绸", "pinyin": "sīchóu", "meaning": "silk", "bn": "রেশম" },
-  { "hanzi": "思想", "pinyin": "sīxiǎng", "meaning": "thought", "bn": "চিন্তা" },
-  { "hanzi": "似乎", "pinyin": "sìhū", "meaning": "seem", "bn": "মনে হওয়া" },
-  { "hanzi": "随身", "pinyin": "suíshēn", "meaning": "carry on", "bn": "সঙ্গে রাখা" },
-  { "hanzi": "碎", "pinyin": "suì", "meaning": "broken", "bn": "ভাঙা" },
-  { "hanzi": "损失", "pinyin": "sǔnshī", "meaning": "loss", "bn": "ক্ষতি" },
-  { "hanzi": "锁", "pinyin": "suǒ", "meaning": "lock", "bn": "তালা" },
-  { "hanzi": "台阶", "pinyin": "táijiē", "meaning": "steps", "bn": "ধাপ" },
-  { "hanzi": "太极拳", "pinyin": "tàijíquán", "meaning": "tai-chi", "bn": "তাই-চি" },
-  { "hanzi": "逃", "pinyin": "táo", "meaning": "escape", "bn": "পালানো" },
-  { "hanzi": "淘气", "pinyin": "táoqì", "meaning": "naughty", "bn": "দুষ্টু" },
-  { "hanzi": "讨价还价", "pinyin": "tǎojiàhuánjià", "meaning": "bargain", "bn": "দরকষাকষি" },
-  { "hanzi": "套", "pinyin": "tào", "meaning": "set", "bn": "সেট" },
-  { "hanzi": "特色", "pinyin": "tèsè", "meaning": "characteristic", "bn": "বৈশিষ্ট্য" },
-  { "hanzi": "提倡", "pinyin": "tíchàng", "meaning": "promote", "bn": "উৎসাহ দেওয়া" },
-  { "hanzi": "题目", "pinyin": "tímù", "meaning": "title", "bn": "শিরোনাম" },
-  { "hanzi": "体贴", "pinyin": "tǐtiē", "meaning": "considerate", "bn": "ভেবে চিন্তে" },
-  { "hanzi": "体验", "pinyin": "tǐyàn", "meaning": "experience", "bn": "অভিজ্ঞতা" },
-  { "hanzi": "天空", "pinyin": "tiānkōng", "meaning": "sky", "bn": "আকাশ" },
-  { "hanzi": "天真", "pinyin": "tiānzhēn", "meaning": "naive", "bn": "সরল" },
-  { "hanzi": "调整", "pinyin": "tiáozhěng", "meaning": "adjust", "bn": "সমন্বয়" },
-  { "hanzi": "通常", "pinyin": "tōngcháng", "meaning": "usually", "bn": "সাধারণত" },
-  { "hanzi": "统一", "pinyin": "tǒngyī", "meaning": "unify", "bn": "একত্র করা" },
-  { "hanzi": "痛快", "pinyin": "tòngkuài", "meaning": "delighted", "bn": "আনন্দিত" },
-  { "hanzi": "偷", "pinyin": "tōu", "meaning": "steal", "bn": "চুরি করা" },
-  { "hanzi": "投资", "pinyin": "tóuzī", "meaning": "invest", "bn": "বিনিয়োগ" },
-  { "hanzi": "突出", "pinyin": "tūchū", "meaning": "prominent", "bn": "গুরুত্বপূর্ণ" },
-  { "hanzi": "土豆", "pinyin": "tǔdòu", "meaning": "potato", "bn": "আলু" },
-  { "hanzi": "兔子", "pinyin": "tùzi", "meaning": "rabbit", "bn": "খরগোশ" },
-  { "hanzi": "推辞", "pinyin": "tuīcí", "meaning": "decline", "bn": "প্রত্যাখ্যান করা" },
-  { "hanzi": "推荐", "pinyin": "tuījiàn", "meaning": "recommend", "bn": "সুপারিশ করা" },
-  { "hanzi": "退", "pinyin": "tuì", "meaning": "retreat", "bn": "পিছু হটা" },
-  { "hanzi": "退休", "pinyin": "tuìxiū", "meaning": "retire", "bn": "অবসর" },
-  { "hanzi": "外公", "pinyin": "wàigōng", "meaning": "grandpa", "bn": "নানা" },
-  { "hanzi": "完整", "pinyin": "wánzhěng", "meaning": "complete", "bn": "সম্পূর্ণ" },
-  { "hanzi": "玩具", "pinyin": "wánjù", "meaning": "toy", "bn": "খেলনা" },
-  { "hanzi": "万一", "pinyin": "wànyī", "meaning": "in case", "bn": "যদি" },
-  { "hanzi": "威胁", "pinyin": "wēixié", "meaning": "threaten", "bn": "হুমকি দেওয়া" },
-  { "hanzi": "维修", "pinyin": "wéixiū", "meaning": "repair", "bn": "মেরামত" },
-  { "hanzi": "围绕", "pinyin": "wéirào", "meaning": "around", "bn": "চারপাশে" },
-  { "hanzi": "尾巴", "pinyin": "wěiba", "meaning": "tail", "bn": "লেজ" },
-  { "hanzi": "委屈", "pinyin": "wěiqu", "meaning": "feel wronged", "bn": "অন্যায় মনে করা" },
-  { "hanzi": "胃", "pinyin": "wèi", "meaning": "stomach", "bn": "পাকস্থলী" },
-  { "hanzi": "位于", "pinyin": "wèiyú", "meaning": "be located", "bn": "অবস্থিত" },
-  { "hanzi": "未必", "pinyin": "wèibì", "meaning": "not necessarily", "bn": "অবশ্যই নয়" },
-  { "hanzi": "温柔", "pinyin": "wēnróu", "meaning": "gentle", "bn": "মৃদু" },
-  { "hanzi": "文具", "pinyin": "wénjù", "meaning": "stationery", "bn": "লেখার সামগ্রী" },
-  { "hanzi": "文学", "pinyin": "wénxué", "meaning": "literature", "bn": "সাহিত্য" },
-  { "hanzi": "稳定", "pinyin": "wěndìng", "meaning": "stable", "bn": "স্থিতিশীল" },
-  { "hanzi": "问候", "pinyin": "wènhòu", "meaning": "greet", "bn": "সালাম করা" },
-  { "hanzi": "卧室", "pinyin": "wòshì", "meaning": "bedroom", "bn": "শয়নকক্ষ" },
-  { "hanzi": "无数", "pinyin": "wúshù", "meaning": "countless", "bn": "অগণিত" },
-  { "hanzi": "勿", "pinyin": "wù", "meaning": "do not", "bn": "না" },
-  { "hanzi": "物质", "pinyin": "wùzhì", "meaning": "material", "bn": "পদার্থ" },
-  { "hanzi": "吸取", "pinyin": "xīqǔ", "meaning": "absorb", "bn": "শোষণ করা" },
-  { "hanzi": "系统", "pinyin": "xìtǒng", "meaning": "system", "bn": "পদ্ধতি" },
-  { "hanzi": "戏剧", "pinyin": "xìjù", "meaning": "drama", "bn": "নাটক" },
-  { "hanzi": "吓", "pinyin": "xià", "meaning": "scare", "bn": "ভয় দেখানো" },
-  { "hanzi": "夏令营", "pinyin": "xiàlìngyíng", "meaning": "summer camp", "bn": "গ্রীষ্মকালীন শিবির" },
-  { "hanzi": "下载", "pinyin": "xiàzài", "meaning": "download", "bn": "ডাউনলোড" },
-  { "hanzi": "显然", "pinyin": "xiǎnrán", "meaning": "obviously", "bn": "স্পষ্টতই" },
-  { "hanzi": "县", "pinyin": "xiàn", "meaning": "county", "bn": "জেলা" },
-  { "hanzi": "现象", "pinyin": "xiànxiàng", "meaning": "phenomenon", "bn": "ঘটনা" },
-  { "hanzi": "香肠", "pinyin": "xiāngcháng", "meaning": "sausage", "bn": "সসেজ" },
-  { "hanzi": "相当", "pinyin": "xiāngdāng", "meaning": "quite", "bn": "অনেকটা" },
-  { "hanzi": "相似", "pinyin": "xiāngsì", "meaning": "similar", "bn": "মিল" },
-  { "hanzi": "想念", "pinyin": "xiǎngniàn", "meaning": "miss", "bn": "মনে পড়া" },
-  { "hanzi": "享受", "pinyin": "xiǎngshòu", "meaning": "enjoy", "bn": "উপভোগ করা" },
-  { "hanzi": "项链", "pinyin": "xiàngliàn", "meaning": "necklace", "bn": "হার" },
-  { "hanzi": "象征", "pinyin": "xiàngzhēng", "meaning": "symbolize", "bn": "প্রতীকী" },
-  { "hanzi": "消极", "pinyin": "xiāojí", "meaning": "negative", "bn": "নেতিবাচক" },
-  { "hanzi": "消失", "pinyin": "xiāoshī", "meaning": "disappear", "bn": "অদৃশ্য হওয়া" },
-  { "hanzi": "小气", "pinyin": "xiǎoqi", "meaning": "stingy", "bn": "কৃপণ" },
-  { "hanzi": "孝顺", "pinyin": "xiàoshun", "meaning": "filial", "bn": "সন্তানধর্ম" },
-  { "hanzi": "斜", "pinyin": "xié", "meaning": "slanting", "bn": "বাঁকা" },
-  { "hanzi": "写作", "pinyin": "xiězuò", "meaning": "writing", "bn": "লেখা" },
-  { "hanzi": "心理", "pinyin": "xīnlǐ", "meaning": "psychology", "bn": "মনোবিজ্ঞান" },
-  { "hanzi": "心脏", "pinyin": "xīnzàng", "meaning": "heart", "bn": "হৃদয়" },
-  { "hanzi": "信任", "pinyin": "xìnrèn", "meaning": "trust", "bn": "বিশ্বাস" },
-  { "hanzi": "行为", "pinyin": "xíngwéi", "meaning": "behaviour", "bn": "আচরণ" },
-  { "hanzi": "形容", "pinyin": "xíngróng", "meaning": "describe", "bn": "বর্ণনা করা" },
-  { "hanzi": "形势", "pinyin": "xíngshì", "meaning": "situation", "bn": "পরিস্থিতি" },
-  { "hanzi": "形状", "pinyin": "xíngzhuàng", "meaning": "shape", "bn": "আকার" },
-  { "hanzi": "幸运", "pinyin": "xìngyùn", "meaning": "lucky", "bn": "ভাগ্যবান" },
-  { "hanzi": "兄弟", "pinyin": "xiōngdì", "meaning": "brother", "bn": "ভাই" },
-  { "hanzi": "虚心", "pinyin": "xūxīn", "meaning": "modest", "bn": "বিনয়ী" },
-  { "hanzi": "宣布", "pinyin": "xuānbù", "meaning": "announce", "bn": "ঘোষণা করা" },
-  { "hanzi": "学术", "pinyin": "xuéshù", "meaning": "academic", "bn": "শিক্ষাগত" },
-  { "hanzi": "询问", "pinyin": "xúnwèn", "meaning": "inquiry", "bn": "জিজ্ঞাসা" },
-  { "hanzi": "训练", "pinyin": "xùnliàn", "meaning": "training", "bn": "প্রশিক্ষণ" },
-  { "hanzi": "押金", "pinyin": "yājīn", "meaning": "deposit", "bn": "জমা" },
-  { "hanzi": "牙齿", "pinyin": "yáchǐ", "meaning": "tooth", "bn": "দাঁত" },
-  { "hanzi": "宴会", "pinyin": "yànhuì", "meaning": "banquet", "bn": "ভোজ" },
-  { "hanzi": "痒", "pinyin": "yǎng", "meaning": "itch", "bn": "চুলকানি" },
-  { "hanzi": "样式", "pinyin": "yàngshì", "meaning": "style", "bn": "স্টাইল" },
-  { "hanzi": "腰", "pinyin": "yāo", "meaning": "waist", "bn": "কোমর" },
-  { "hanzi": "咬", "pinyin": "yǎo", "meaning": "bite", "bn": "কামড়" },
-  { "hanzi": "夜", "pinyin": "yè", "meaning": "night", "bn": "রাত" },
-  { "hanzi": "业余", "pinyin": "yèyú", "meaning": "amateur", "bn": "অপেশাদার" },
-  { "hanzi": "依然", "pinyin": "yīrán", "meaning": "still", "bn": "এখনও" },
-  { "hanzi": "一旦", "pinyin": "yídàn", "meaning": "once", "bn": "একবার" },
-  { "hanzi": "一致", "pinyin": "yízhì", "meaning": "identical", "bn": "একই রকম" },
-  { "hanzi": "一再", "pinyin": "yízài", "meaning": "repeatedly", "bn": "বারবার" },
-  { "hanzi": "移民", "pinyin": "yímín", "meaning": "immigrant", "bn": "অভিবাসী" },
-  { "hanzi": "疑问", "pinyin": "yíwèn", "meaning": "doubt", "bn": "সন্দেহ" },
-  { "hanzi": "以来", "pinyin": "yǐlái", "meaning": "since", "bn": "থেকে" },
-  { "hanzi": "意外", "pinyin": "yìwài", "meaning": "accident", "bn": "দুর্ঘটনা" },
-  { "hanzi": "议论", "pinyin": "yìlùn", "meaning": "discussion", "bn": "আলোচনা" },
-  { "hanzi": "义务", "pinyin": "yìwù", "meaning": "obligation", "bn": "দায়িত্ব" },
-  { "hanzi": "因素", "pinyin": "yīnsù", "meaning": "factor", "bn": "উপাদান" },
-  { "hanzi": "英俊", "pinyin": "yīngjùn", "meaning": "handsome", "bn": "সুদর্শন" },
-  { "hanzi": "营养", "pinyin": "yíngyǎng", "meaning": "nutrition", "bn": "পুষ্টি" },
-  { "hanzi": "硬", "pinyin": "yìng", "meaning": "hard", "bn": "কঠিন" },
-  { "hanzi": "应付", "pinyin": "yìngfu", "meaning": "cope", "bn": "মোকাবিলা করা" },
-  { "hanzi": "应用", "pinyin": "yìngyòng", "meaning": "application", "bn": "আবেদন" },
-  { "hanzi": "拥挤", "pinyin": "yōngjǐ", "meaning": "crowded", "bn": "ভিড়" },
-  { "hanzi": "勇气", "pinyin": "yǒngqì", "meaning": "courage", "bn": "সাহস" },
-  { "hanzi": "用功", "pinyin": "yònggōng", "meaning": "diligent", "bn": "পরিশ্রমী" },
-  { "hanzi": "优惠", "pinyin": "yōuhuì", "meaning": "preferential", "bn": "বিশেষ ছাড়" },
-  { "hanzi": "优势", "pinyin": "yōushì", "meaning": "advantage", "bn": "সুবিধা" },
-  { "hanzi": "悠久", "pinyin": "yōujiǔ", "meaning": "long-standing", "bn": "দীর্ঘকালীন" },
-  { "hanzi": "油炸", "pinyin": "yóuzhá", "meaning": "deep-fried", "bn": "ভাজা" },
-  { "hanzi": "有利", "pinyin": "yǒulì", "meaning": "beneficial", "bn": "লাভজনক" },
-  { "hanzi": "娱乐", "pinyin": "yúlè", "meaning": "entertainment", "bn": "বিনোদন" },
-  { "hanzi": "预报", "pinyin": "yùbào", "meaning": "forecast", "bn": "পূর্বাভাস" },
-  { "hanzi": "预防", "pinyin": "yùfáng", "meaning": "prevention", "bn": "প্রতিরোধ" },
-  { "hanzi": "圆", "pinyin": "yuán", "meaning": "round", "bn": "গোল" },
-  { "hanzi": "元旦", "pinyin": "yuándàn", "meaning": "New Year's Day", "bn": "নববর্ষ" },
-  { "hanzi": "员工", "pinyin": "yuángōng", "meaning": "employee", "bn": "কর্মচারী" },
-  { "hanzi": "愿望", "pinyin": "yuànwàng", "meaning": "wish", "bn": "ইচ্ছা" },
-  { "hanzi": "晕", "pinyin": "yūn", "meaning": "faint", "bn": "ঝিমুনি" },
-  { "hanzi": "运气", "pinyin": "yùnqi", "meaning": "luck", "bn": "ভাগ্য" },
-  { "hanzi": "运用", "pinyin": "yùnyòng", "meaning": "apply", "bn": "প্রয়োগ করা" },
-  { "hanzi": "灾害", "pinyin": "zāihài", "meaning": "disaster", "bn": "দুর্যোগ" },
-  { "hanzi": "在乎", "pinyin": "zàihu", "meaning": "care about", "bn": "গুরুত্ব দেওয়া" },
-  { "hanzi": "再三", "pinyin": "zàisān", "meaning": "repeatedly", "bn": "বারবার" },
-  { "hanzi": "赞成", "pinyin": "zànchéng", "meaning": "approve", "bn": "সমর্থন করা" },
-  { "hanzi": "糟糕", "pinyin": "zāogāo", "meaning": "too bad", "bn": "খারাপ" },
-  { "hanzi": "造成", "pinyin": "zàochéng", "meaning": "cause", "bn": "ঘটানো" },
-  { "hanzi": "责备", "pinyin": "zébèi", "meaning": "blame", "bn": "দোষারোপ করা" },
-  { "hanzi": "窄", "pinyin": "zhǎi", "meaning": "narrow", "bn": "সংকীর্ণ" },
-  { "hanzi": "展开", "pinyin": "zhǎnkāi", "meaning": "unfold", "bn": "মেলে ধরা" },
-  { "hanzi": "掌握", "pinyin": "zhǎngwò", "meaning": "master", "bn": "দখল করা" },
-  { "hanzi": "账户", "pinyin": "zhànghù", "meaning": "account", "bn": "অ্যাকাউন্ট" },
-  { "hanzi": "珍惜", "pinyin": "zhēnxī", "meaning": "cherish", "bn": "লালন করা" },
-  { "hanzi": "阵", "pinyin": "zhèn", "meaning": "burst", "bn": "ঝোড়ো" },
-  { "hanzi": "睁", "pinyin": "zhēng", "meaning": "open eyes", "bn": "চোখ খোলা" },
-  { "hanzi": "争取", "pinyin": "zhēngqǔ", "meaning": "strive for", "bn": "প্রচেষ্টা করা" },
-  { "hanzi": "整个", "pinyin": "zhěnggè", "meaning": "whole", "bn": "সম্পূর্ণ" },
-  { "hanzi": "整齐", "pinyin": "zhěngqí", "meaning": "neat", "bn": "সুশৃঙ্খল" },
-  { "hanzi": "正", "pinyin": "zhèng", "meaning": "just", "bn": "ঠিক" },
-  { "hanzi": "政府", "pinyin": "zhèngfǔ", "meaning": "government", "bn": "সরকার" },
-  { "hanzi": "证件", "pinyin": "zhèngjiàn", "meaning": "certificate", "bn": "সার্টিফিকেট" },
-  { "hanzi": "支", "pinyin": "zhī", "meaning": "branch", "bn": "শাখা" },
-  { "hanzi": "支票", "pinyin": "zhīpiào", "meaning": "cheque", "bn": "চেক" },
-  { "hanzi": "指导", "pinyin": "zhǐdǎo", "meaning": "guide", "bn": "নির্দেশনা" },
-  { "hanzi": "制定", "pinyin": "zhìdìng", "meaning": "formulate", "bn": "প্রণয়ন করা" },
-  { "hanzi": "制造", "pinyin": "zhìzào", "meaning": "manufacture", "bn": "উৎপাদন" },
-  { "hanzi": "智慧", "pinyin": "zhìhuì", "meaning": "wisdom", "bn": "প্রজ্ঞা" },
-  { "hanzi": "秩序", "pinyin": "zhìxù", "meaning": "order", "bn": "শৃঙ্খলা" },
-  { "hanzi": "中介", "pinyin": "zhōngjiè", "meaning": "intermediary", "bn": "মধ্যস্থতাকারী" },
-  { "hanzi": "中旬", "pinyin": "zhōngxún", "meaning": "mid-month", "bn": "মাসের মাঝ" },
-  { "hanzi": "周到", "pinyin": "zhōudào", "meaning": "thoughtful", "bn": "বিবেচনাপূর্ণ" },
-  { "hanzi": "逐步", "pinyin": "zhúbù", "meaning": "step by step", "bn": "ধাপে ধাপে" },
-  { "hanzi": "竹子", "pinyin": "zhúzi", "meaning": "bamboo", "bn": "বাঁশ" },
-  { "hanzi": "主持", "pinyin": "zhǔchí", "meaning": "host", "bn": "সঞ্চালন করা" },
-  { "hanzi": "主观", "pinyin": "zhǔguān", "meaning": "subjective", "bn": "ব্যক্তিগত" },
-  { "hanzi": "主题", "pinyin": "zhǔtí", "meaning": "theme", "bn": "থিম" },
-  { "hanzi": "主任", "pinyin": "zhǔrèn", "meaning": "director", "bn": "প্রধান" },
-  { "hanzi": "抓", "pinyin": "zhuā", "meaning": "grab", "bn": "ধরা" },
-  { "hanzi": "专家", "pinyin": "zhuānjiā", "meaning": "expert", "bn": "বিশেষজ্ঞ" },
-  { "hanzi": "专心", "pinyin": "zhuānxīn", "meaning": "attentive", "bn": "মনোযোগী" },
-  { "hanzi": "转告", "pinyin": "zhuǎngào", "meaning": "pass on", "bn": "জানিয়ে দেওয়া" },
-  { "hanzi": "装", "pinyin": "zhuāng", "meaning": "pretend", "bn": "ভান করা" },
-  { "hanzi": "装修", "pinyin": "zhuāngxiū", "meaning": "renovate", "bn": "সাজসজ্জা" },
-  { "hanzi": "状况", "pinyin": "zhuàngkuàng", "meaning": "condition", "bn": "অবস্থা" },
-  { "hanzi": "追", "pinyin": "zhuī", "meaning": "chase", "bn": "ধাওয়া করা" },
-  { "hanzi": "资格", "pinyin": "zīgé", "meaning": "qualification", "bn": "যোগ্যতা" },
-  { "hanzi": "资料", "pinyin": "zīliào", "meaning": "data", "bn": "তথ্য" },
-  { "hanzi": "姿势", "pinyin": "zīshì", "meaning": "posture", "bn": "ভঙ্গি" },
-  { "hanzi": "紫", "pinyin": "zǐ", "meaning": "purple", "bn": "বেগুনি" },
-  { "hanzi": "字幕", "pinyin": "zìmù", "meaning": "subtitle", "bn": "সাবটাইটেল" },
-  { "hanzi": "自动", "pinyin": "zìdòng", "meaning": "automatic", "bn": "স্বয়ংক্রিয়" },
-  { "hanzi": "自由", "pinyin": "zìyóu", "meaning": "freedom", "bn": "স্বাধীনতা" },
-  { "hanzi": "综合", "pinyin": "zōnghé", "meaning": "comprehensive", "bn": "সমন্বিত" },
-  { "hanzi": "总共", "pinyin": "zǒnggòng", "meaning": "in total", "bn": "মোট" },
-  { "hanzi": "总理", "pinyin": "zǒnglǐ", "meaning": "prime minister", "bn": "প্রধানমন্ত্রী" },
-  { "hanzi": "总算", "pinyin": "zǒngsuàn", "meaning": "finally", "bn": "অবশেষে" },
-  { "hanzi": "总之", "pinyin": "zǒngzhī", "meaning": "in short", "bn": "সংক্ষেপে" },
-  { "hanzi": "组成", "pinyin": "zǔchéng", "meaning": "compose", "bn": "গঠন করা" },
-  { "hanzi": "组织", "pinyin": "zǔzhī", "meaning": "organization", "bn": "সংগঠন" },
-  { "hanzi": "作文", "pinyin": "zuòwén", "meaning": "composition", "bn": "রচনা" },
-  { "hanzi": "哎", "pinyin": "āi", "meaning": "oh", "bn": "আরে" },
-  { "hanzi": "爱护", "pinyin": "àihù", "meaning": "care for", "bn": "যত্ন নেওয়া" },
-  { "hanzi": "爱惜", "pinyin": "àixī", "meaning": "cherish", "bn": "লালন করা" },
-  { "hanzi": "安装", "pinyin": "ānzhuāng", "meaning": "install", "bn": "ইনস্টল করা" },
-  { "hanzi": "暗", "pinyin": "àn", "meaning": "dark", "bn": "অন্ধকার" },
-  { "hanzi": "把握", "pinyin": "bǎwò", "meaning": "grasp", "bn": "দখল করা" },
-  { "hanzi": "摆", "pinyin": "bǎi", "meaning": "put", "bn": "রাখা" },
-  { "hanzi": "办理", "pinyin": "bànlǐ", "meaning": "handle", "bn": "সম্পন্ন করা" },
-  { "hanzi": "傍晚", "pinyin": "bàngwǎn", "meaning": "evening", "bn": "সন্ধ্যা" },
-  { "hanzi": "包裹", "pinyin": "bāoguǒ", "meaning": "parcel", "bn": "প্যাকেট" },
-  { "hanzi": "包括", "pinyin": "bāokuò", "meaning": "include", "bn": "অন্তর্ভুক্ত করা" },
-  { "hanzi": "薄", "pinyin": "báo", "meaning": "thin", "bn": "পাতলা" },
-  { "hanzi": "宝贝", "pinyin": "bǎobèi", "meaning": "baby", "bn": "শিশু" },
-  { "hanzi": "保持", "pinyin": "bǎochí", "meaning": "keep", "bn": "রাখা" },
-  { "hanzi": "保险", "pinyin": "bǎoxiǎn", "meaning": "insurance", "bn": "বীমা" },
-  { "hanzi": "抱怨", "pinyin": "bàoyuàn", "meaning": "complain", "bn": "অভিযোগ করা" },
-  { "hanzi": "报道", "pinyin": "bàodào", "meaning": "report", "bn": "প্রতিবেদন" },
-  { "hanzi": "报社", "pinyin": "bàoshè", "meaning": "newspaper office", "bn": "সংবাদপত্র অফিস" },
-  { "hanzi": "背", "pinyin": "bèi", "meaning": "back", "bn": "পিঠ" },
-  { "hanzi": "本质", "pinyin": "běnzhì", "meaning": "essence", "bn": "সারাংশ" },
-  { "hanzi": "彼此", "pinyin": "bǐcǐ", "meaning": "each other", "bn": "একে অপর" },
-  { "hanzi": "毕竟", "pinyin": "bìjìng", "meaning": "after all", "bn": "শেষ পর্যন্ত" },
-  { "hanzi": "避免", "pinyin": "bìmiǎn", "meaning": "avoid", "bn": "এড়ানো" },
-  { "hanzi": "编辑", "pinyin": "biānjí", "meaning": "edit", "bn": "সম্পাদনা করা" },
-  { "hanzi": "便", "pinyin": "biàn", "meaning": "convenient", "bn": "সুবিধাজনক" },
-  { "hanzi": "标点", "pinyin": "biāodiǎn", "meaning": "punctuation", "bn": "বিরাম চিহ্ন" },
-  { "hanzi": "表明", "pinyin": "biǎomíng", "meaning": "indicate", "bn": "নির্দেশ করা" },
-  { "hanzi": "病毒", "pinyin": "bìngdú", "meaning": "virus", "bn": "ভাইরাস" },
-  { "hanzi": "播放", "pinyin": "bōfàng", "meaning": "broadcast", "bn": "সম্প্রচার করা" },
-  { "hanzi": "脖子", "pinyin": "bózi", "meaning": "neck", "bn": "ঘাড়" },
-  { "hanzi": "不要紧", "pinyin": "búyàojǐn", "meaning": "never mind", "bn": "কোনো সমস্যা নেই" },
-  { "hanzi": "布", "pinyin": "bù", "meaning": "cloth", "bn": "কাপড়" },
-  { "hanzi": "不安", "pinyin": "bù'ān", "meaning": "uneasy", "bn": "অস্থির" },
-  { "hanzi": "不得了", "pinyin": "bùdéliǎo", "meaning": "terrible", "bn": "ভয়াবহ" },
-  { "hanzi": "不如", "pinyin": "bùrú", "meaning": "not as good", "bn": "এত ভালো নয়" },
-  { "hanzi": "步骤", "pinyin": "bùzhòu", "meaning": "step", "bn": "পদক্ষেপ" },
-  { "hanzi": "采访", "pinyin": "cǎifǎng", "meaning": "interview", "bn": "সাক্ষাৎকার" },
-  { "hanzi": "彩虹", "pinyin": "cǎihóng", "meaning": "rainbow", "bn": "রংধনু" },
-  { "hanzi": "参与", "pinyin": "cānyù", "meaning": "participate", "bn": "অংশগ্রহণ করা" },
-  { "hanzi": "惭愧", "pinyin": "cánkuì", "meaning": "ashamed", "bn": "লজ্জিত" },
-  { "hanzi": "操心", "pinyin": "cāoxīn", "meaning": "worry", "bn": "চিন্তা করা" },
-  { "hanzi": "册", "pinyin": "cè", "meaning": "volume", "bn": "খণ্ড" },
-  { "hanzi": "测验", "pinyin": "cèyàn", "meaning": "test", "bn": "পরীক্ষা" },
-  { "hanzi": "曾经", "pinyin": "céngjīng", "meaning": "once", "bn": "একসময়" },
-  { "hanzi": "差距", "pinyin": "chājù", "meaning": "gap", "bn": "ফারাক" },
-  { "hanzi": "产品", "pinyin": "chǎnpǐn", "meaning": "product", "bn": "পণ্য" },
-  { "hanzi": "长途", "pinyin": "chángtú", "meaning": "long-distance", "bn": "দূরপাল্লার" },
-  { "hanzi": "抄", "pinyin": "chāo", "meaning": "copy", "bn": "কপি করা" },
-  { "hanzi": "超级", "pinyin": "chāojí", "meaning": "super", "bn": "সুপার" },
-  { "hanzi": "朝", "pinyin": "cháo", "meaning": "towards", "bn": "দিকে" },
-  { "hanzi": "炒", "pinyin": "chǎo", "meaning": "stir-fry", "bn": "ভাজা" },
-  { "hanzi": "吵架", "pinyin": "chǎojià", "meaning": "quarrel", "bn": "ঝগড়া" },
-  { "hanzi": "车厢", "pinyin": "chēxiāng", "meaning": "carriage", "bn": "বগি" },
-  { "hanzi": "沉默", "pinyin": "chénmò", "meaning": "silent", "bn": "নীরব" },
-  { "hanzi": "称呼", "pinyin": "chēnghu", "meaning": "address", "bn": "সম্বোধন করা" },
-  { "hanzi": "承认", "pinyin": "chéngrèn", "meaning": "admit", "bn": "স্বীকার করা" },
-  { "hanzi": "程度", "pinyin": "chéngdù", "meaning": "degree", "bn": "মাত্রা" },
-  { "hanzi": "成分", "pinyin": "chéngfèn", "meaning": "ingredient", "bn": "উপাদান" },
-  { "hanzi": "成果", "pinyin": "chéngguǒ", "meaning": "achievement", "bn": "সাফল্য" },
-  { "hanzi": "成就", "pinyin": "chéngjiù", "meaning": "accomplishment", "bn": "কৃতিত্ব" },
-  { "hanzi": "成熟", "pinyin": "chéngshú", "meaning": "mature", "bn": "পরিপক্ক" },
-  { "hanzi": "成长", "pinyin": "chéngzhǎng", "meaning": "grow up", "bn": "বড় হওয়া" },
-  { "hanzi": "吃亏", "pinyin": "chīkuī", "meaning": "suffer loss", "bn": "ক্ষতি হওয়া" },
-  { "hanzi": "迟早", "pinyin": "chízǎo", "meaning": "sooner or later", "bn": "আগে বা পরে" },
-  { "hanzi": "池塘", "pinyin": "chítáng", "meaning": "pond", "bn": "পুকুর" },
-  { "hanzi": "翅膀", "pinyin": "chìbǎng", "meaning": "wing", "bn": "ডানা" },
-  { "hanzi": "充电器", "pinyin": "chōngdiànqì", "meaning": "charger", "bn": "চার্জার" },
-  { "hanzi": "充满", "pinyin": "chōngmǎn", "meaning": "full of", "bn": "ভরপুর" },
-  { "hanzi": "抽屉", "pinyin": "chōuti", "meaning": "drawer", "bn": "দরাজ" },
-  { "hanzi": "臭", "pinyin": "chòu", "meaning": "smelly", "bn": "দুর্গন্ধ" },
-  { "hanzi": "出版", "pinyin": "chūbǎn", "meaning": "publish", "bn": "প্রকাশ করা" },
-  { "hanzi": "出色", "pinyin": "chūsè", "meaning": "outstanding", "bn": "অসাধারণ" },
-  { "hanzi": "初级", "pinyin": "chūjí", "meaning": "primary", "bn": "প্রাথমিক" },
-  { "hanzi": "传播", "pinyin": "chuánbō", "meaning": "spread", "bn": "ছড়িয়ে পড়া" },
-  { "hanzi": "传说", "pinyin": "chuánshuō", "meaning": "legend", "bn": "কিংবদন্তি" },
-  { "hanzi": "窗帘", "pinyin": "chuānglián", "meaning": "curtain", "bn": "পর্দা" },
-  { "hanzi": "创造", "pinyin": "chuàngzào", "meaning": "create", "bn": "সৃষ্টি করা" },
-  { "hanzi": "词汇", "pinyin": "cíhuì", "meaning": "vocabulary", "bn": "শব্দভান্ডার" },
-  { "hanzi": "辞职", "pinyin": "cízhí", "meaning": "resign", "bn": "পদত্যাগ করা" },
-  { "hanzi": "刺激", "pinyin": "cìjī", "meaning": "stimulate", "bn": "উত্তেজিত করা" },
-  { "hanzi": "从此", "pinyin": "cóngcǐ", "meaning": "from then on", "bn": "তখন থেকে" },
-  { "hanzi": "从事", "pinyin": "cóngshì", "meaning": "engage in", "bn": "জড়িত হওয়া" },
-  { "hanzi": "促进", "pinyin": "cùjìn", "meaning": "promote", "bn": "উৎসাহ দেওয়া" },
-  { "hanzi": "催", "pinyin": "cuī", "meaning": "urge", "bn": "জোর করা" },
-  { "hanzi": "存在", "pinyin": "cúnzài", "meaning": "exist", "bn": "অস্তিত্ব" },
-  { "hanzi": "答应", "pinyin": "dāying", "meaning": "promise", "bn": "প্রতিশ্রুতি দেওয়া" },
-  { "hanzi": "达到", "pinyin": "dádào", "meaning": "achieve", "bn": "অর্জন করা" },
-  { "hanzi": "打交道", "pinyin": "dǎjiāodao", "meaning": "deal with", "bn": "মোকাবিলা করা" },
-  { "hanzi": "打喷嚏", "pinyin": "dǎpēntì", "meaning": "sneeze", "bn": "হাঁচি দেওয়া" },
-  { "hanzi": "打听", "pinyin": "dǎting", "meaning": "inquire", "bn": "জিজ্ঞাসা করা" },
-  { "hanzi": "大方", "pinyin": "dàfang", "meaning": "generous", "bn": "উদার" },
-  { "hanzi": "大型", "pinyin": "dàxíng", "meaning": "large-scale", "bn": "বড় আকারের" },
-  { "hanzi": "呆", "pinyin": "dāi", "meaning": "stay", "bn": "থাকা" },
-  { "hanzi": "代替", "pinyin": "dàitì", "meaning": "replace", "bn": "প্রতিস্থাপন করা" },
-  { "hanzi": "贷款", "pinyin": "dàikuǎn", "meaning": "loan", "bn": "ঋণ" },
-  { "hanzi": "单纯", "pinyin": "dānchún", "meaning": "simple", "bn": "সরল" },
-  { "hanzi": "单独", "pinyin": "dāndú", "meaning": "alone", "bn": "একা" },
-  { "hanzi": "单元", "pinyin": "dānyuán", "meaning": "unit", "bn": "একক" },
-  { "hanzi": "胆小鬼", "pinyin": "dǎnxiǎoguǐ", "meaning": "coward", "bn": "ভীরু" },
-  { "hanzi": "当地", "pinyin": "dāngdì", "meaning": "local", "bn": "স্থানীয়" },
-  { "hanzi": "当心", "pinyin": "dāngxīn", "meaning": "be careful", "bn": "সাবধান" },
-  { "hanzi": "挡", "pinyin": "dǎng", "meaning": "block", "bn": "বাধা দেওয়া" },
-  { "hanzi": "岛屿", "pinyin": "dǎoyǔ", "meaning": "island", "bn": "দ্বীপ" },
-  { "hanzi": "导演", "pinyin": "dǎoyǎn", "meaning": "director", "bn": "পরিচালক" },
-  { "hanzi": "导致", "pinyin": "dǎozhì", "meaning": "lead to", "bn": "ঘটানো" },
-  { "hanzi": "到达", "pinyin": "dàodá", "meaning": "arrive", "bn": "পৌঁছানো" },
-  { "hanzi": "道德", "pinyin": "dàodé", "meaning": "morality", "bn": "নৈতিকতা" },
-  { "hanzi": "等待", "pinyin": "děngdài", "meaning": "wait", "bn": "অপেক্ষা করা" },
-  { "hanzi": "的确", "pinyin": "díquè", "meaning": "indeed", "bn": "প্রকৃতপক্ষে" },
-  { "hanzi": "地道", "pinyin": "dìdao", "meaning": "tunnel", "bn": "সুড়ঙ্গ" },
-  { "hanzi": "地理", "pinyin": "dìlǐ", "meaning": "geography", "bn": "ভূগোল" },
-  { "hanzi": "地区", "pinyin": "dìqū", "meaning": "region", "bn": "অঞ্চল" },
-  { "hanzi": "地位", "pinyin": "dìwèi", "meaning": "status", "bn": "মর্যাদা" },
-  { "hanzi": "点心", "pinyin": "diǎnxin", "meaning": "snack", "bn": "নাস্তা" },
-  { "hanzi": "电台", "pinyin": "diàntái", "meaning": "radio station", "bn": "রেডিও স্টেশন" },
-  { "hanzi": "钓", "pinyin": "diào", "meaning": "fish", "bn": "মাছ ধরা" },
-  { "hanzi": "洞", "pinyin": "dòng", "meaning": "hole", "bn": "গর্ত" },
-  { "hanzi": "豆腐", "pinyin": "dòufu", "meaning": "tofu", "bn": "টফু" },
-  { "hanzi": "独立", "pinyin": "dúlì", "meaning": "independent", "bn": "স্বাধীন" },
-  { "hanzi": "断", "pinyin": "duàn", "meaning": "break", "bn": "ভাঙা" },
-  { "hanzi": "堆", "pinyin": "duī", "meaning": "pile", "bn": "স্তূপ" },
-  { "hanzi": "对方", "pinyin": "duìfāng", "meaning": "the other party", "bn": "অন্য পক্ষ" },
-  { "hanzi": "对象", "pinyin": "duìxiàng", "meaning": "partner", "bn": "সঙ্গী" },
-  { "hanzi": "兑换", "pinyin": "duìhuàn", "meaning": "exchange", "bn": "বিনিময় করা" },
-  { "hanzi": "蹲", "pinyin": "dūn", "meaning": "squat", "bn": "বসা" },
-  { "hanzi": "多余", "pinyin": "duōyú", "meaning": "surplus", "bn": "অতিরিক্ত" },
-  { "hanzi": "躲藏", "pinyin": "duǒcáng", "meaning": "hide", "bn": "লুকানো" },
-  { "hanzi": "恶劣", "pinyin": "èliè", "meaning": "bad", "bn": "খারাপ" },
-  { "hanzi": "耳环", "pinyin": "ěrhuán", "meaning": "earring", "bn": "ঝুমকা" },
-  { "hanzi": "发愁", "pinyin": "fāchóu", "meaning": "worry", "bn": "চিন্তা করা" },
-  { "hanzi": "发抖", "pinyin": "fādǒu", "meaning": "tremble", "bn": "কাঁপা" },
-  { "hanzi": "发明", "pinyin": "fāmíng", "meaning": "invention", "bn": "আবিষ্কার" },
-  { "hanzi": "翻", "pinyin": "fān", "meaning": "turn", "bn": "পাল্টানো" },
-  { "hanzi": "反复", "pinyin": "fǎnfù", "meaning": "repeatedly", "bn": "বারবার" },
-  { "hanzi": "反映", "pinyin": "fǎnyìng", "meaning": "reflect", "bn": "প্রতিফলিত করা" },
-  { "hanzi": "方", "pinyin": "fāng", "meaning": "square", "bn": "বর্গ" },
-  { "hanzi": "仿佛", "pinyin": "fǎngfú", "meaning": "seem", "bn": "মনে হওয়া" },
-  { "hanzi": "非", "pinyin": "fēi", "meaning": "wrong", "bn": "ভুল" },
-  { "hanzi": "废话", "pinyin": "fèihuà", "meaning": "nonsense", "bn": "আজেবাজে কথা" },
-  { "hanzi": "分别", "pinyin": "fēnbié", "meaning": "separate", "bn": "আলাদা করা" },
-  { "hanzi": "分配", "pinyin": "fēnpèi", "meaning": "distribute", "bn": "বিতরণ করা" },
-  { "hanzi": "分析", "pinyin": "fēnxī", "meaning": "analysis", "bn": "বিশ্লেষণ" },
-  { "hanzi": "纷纷", "pinyin": "fēnfēn", "meaning": "one after another", "bn": "একের পর এক" },
-  { "hanzi": "奋斗", "pinyin": "fèndòu", "meaning": "struggle", "bn": "সংগ্রাম করা" },
-  { "hanzi": "风格", "pinyin": "fēnggé", "meaning": "style", "bn": "শৈলী" },
-  { "hanzi": "风俗", "pinyin": "fēngsú", "meaning": "custom", "bn": "রীতি" },
-  { "hanzi": "疯狂", "pinyin": "fēngkuáng", "meaning": "crazy", "bn": "পাগল" },
-  { "hanzi": "否定", "pinyin": "fǒudìng", "meaning": "negative", "bn": "নাকচ" },
-  { "hanzi": "幅", "pinyin": "fú", "meaning": "classifier for picture", "bn": "ছবি গণনা" },
-  { "hanzi": "服装", "pinyin": "fúzhuāng", "meaning": "clothing", "bn": "পোশাক" },
-  { "hanzi": "辅导", "pinyin": "fǔdǎo", "meaning": "coach", "bn": "প্রশিক্ষণ দেওয়া" },
-  { "hanzi": "妇女", "pinyin": "fùnǚ", "meaning": "woman", "bn": "নারী" },
-  { "hanzi": "改革", "pinyin": "gǎigé", "meaning": "reform", "bn": "সংস্কার" },
-  { "hanzi": "改善", "pinyin": "gǎishàn", "meaning": "improve", "bn": "উন্নত করা" },
-  { "hanzi": "盖", "pinyin": "gài", "meaning": "cover", "bn": "ঢাকা" },
-  { "hanzi": "概念", "pinyin": "gàiniàn", "meaning": "concept", "bn": "ধারণা" },
-  { "hanzi": "干脆", "pinyin": "gāncuì", "meaning": "simply", "bn": "সরাসরি" },
-  { "hanzi": "干燥", "pinyin": "gānzào", "meaning": "dry", "bn": "শুষ্ক" },
-  { "hanzi": "感激", "pinyin": "gǎnjī", "meaning": "grateful", "bn": "কৃতজ্ঞ" },
-  { "hanzi": "感受", "pinyin": "gǎnshòu", "meaning": "feel", "bn": "অনুভব করা" },
-  { "hanzi": "赶紧", "pinyin": "gǎnjǐn", "meaning": "quickly", "bn": "তাড়াতাড়ি" },
-  { "hanzi": "钢铁", "pinyin": "gāngtiě", "meaning": "steel", "bn": "ইস্পাত" },
-  { "hanzi": "高档", "pinyin": "gāodàng", "meaning": "high-grade", "bn": "উচ্চমানের" },
-  { "hanzi": "搞", "pinyin": "gǎo", "meaning": "do", "bn": "করা" },
-  { "hanzi": "格外", "pinyin": "géwài", "meaning": "especially", "bn": "বিশেষভাবে" },
-  { "hanzi": "个别", "pinyin": "gèbié", "meaning": "individual", "bn": "স্বতন্ত্র" },
-  { "hanzi": "个性", "pinyin": "gèxìng", "meaning": "personality", "bn": "ব্যক্তিত্ব" },
-  { "hanzi": "根", "pinyin": "gēn", "meaning": "root", "bn": "মূল" },
-  { "hanzi": "公布", "pinyin": "gōngbù", "meaning": "publish", "bn": "প্রকাশ করা" },
-  { "hanzi": "公元", "pinyin": "gōngyuán", "meaning": "AD", "bn": "খ্রিস্টাব্দ" },
-  { "hanzi": "公主", "pinyin": "gōngzhǔ", "meaning": "princess", "bn": "রাজকন্যা" },
-  { "hanzi": "工程师", "pinyin": "gōngchéngshī", "meaning": "engineer", "bn": "প্রকৌশলী" },
-  { "hanzi": "工人", "pinyin": "gōngrén", "meaning": "worker", "bn": "শ্রমিক" },
-  { "hanzi": "恭喜", "pinyin": "gōngxǐ", "meaning": "congratulations", "bn": "অভিনন্দন" },
-  { "hanzi": "贡献", "pinyin": "gòngxiàn", "meaning": "contribute", "bn": "অবদান রাখা" },
-  { "hanzi": "构成", "pinyin": "gòuchéng", "meaning": "constitute", "bn": "গঠন করা" },
-  { "hanzi": "姑姑", "pinyin": "gūgu", "meaning": "aunt", "bn": "ফুফু" },
-  { "hanzi": "古典", "pinyin": "gǔdiǎn", "meaning": "classical", "bn": "শাস্ত্রীয়" },
-  { "hanzi": "鼓舞", "pinyin": "gǔwǔ", "meaning": "inspire", "bn": "উদ্বুদ্ধ করা" },
-  { "hanzi": "股票", "pinyin": "gǔpiào", "meaning": "stock", "bn": "শেয়ার" },
-  { "hanzi": "固定", "pinyin": "gùdìng", "meaning": "fixed", "bn": "স্থির" },
-  { "hanzi": "挂号", "pinyin": "guàhào", "meaning": "register", "bn": "নিবন্ধন করা" },
-  { "hanzi": "拐弯", "pinyin": "guǎiwān", "meaning": "turn", "bn": "মোড় নেওয়া" },
-  { "hanzi": "官", "pinyin": "guān", "meaning": "officer", "bn": "অফিসার" },
-  { "hanzi": "关闭", "pinyin": "guānbì", "meaning": "close", "bn": "বন্ধ করা" },
-  { "hanzi": "观点", "pinyin": "guāndiǎn", "meaning": "viewpoint", "bn": "দৃষ্টিভঙ্গি" },
-  { "hanzi": "管子", "pinyin": "guǎnzi", "meaning": "pipe", "bn": "নল" },
-  { "hanzi": "光临", "pinyin": "guānglín", "meaning": "presence", "bn": "উপস্থিতি" },
-  { "hanzi": "光盘", "pinyin": "guāngpán", "meaning": "CD", "bn": "সিডি" },
-  { "hanzi": "广场", "pinyin": "guǎngchǎng", "meaning": "square", "bn": "চত্বর" },
-  { "hanzi": "广泛", "pinyin": "guǎngfàn", "meaning": "wide", "bn": "বিস্তৃত" },
-  { "hanzi": "规矩", "pinyin": "guīju", "meaning": "rule", "bn": "নিয়ম" },
-  { "hanzi": "规模", "pinyin": "guīmó", "meaning": "scale", "bn": "পরিমাণ" },
-  { "hanzi": "归纳", "pinyin": "guīnà", "meaning": "summarize", "bn": "সারাংশ করা" },
-  { "hanzi": "柜台", "pinyin": "guìtái", "meaning": "counter", "bn": "কাউন্টার" },
-  { "hanzi": "锅", "pinyin": "guō", "meaning": "pot", "bn": "হাঁড়ি" },
-  { "hanzi": "国王", "pinyin": "guówáng", "meaning": "king", "bn": "রাজা" },
-  { "hanzi": "果然", "pinyin": "guǒrán", "meaning": "sure enough", "bn": "প্রকৃতপক্ষে" },
-  { "hanzi": "过分", "pinyin": "guòfèn", "meaning": "excessive", "bn": "অতিরিক্ত" },
-  { "hanzi": "过期", "pinyin": "guòqī", "meaning": "expired", "bn": "মেয়াদ উত্তীর্ণ" },
-  { "hanzi": "哈", "pinyin": "hā", "meaning": "ha", "bn": "হা" },
-  { "hanzi": "海关", "pinyin": "hǎiguān", "meaning": "customs", "bn": "শুল্ক" },
-  { "hanzi": "喊", "pinyin": "hǎn", "meaning": "shout", "bn": "চিৎকার করা" },
-  { "hanzi": "行业", "pinyin": "hángyè", "meaning": "industry", "bn": "শিল্প" },
-  { "hanzi": "好客", "pinyin": "hàokè", "meaning": "hospitable", "bn": "অতিথিপরায়ণ" },
-  { "hanzi": "和平", "pinyin": "hépíng", "meaning": "peace", "bn": "শান্তি" },
-  { "hanzi": "何况", "pinyin": "hékuàng", "meaning": "let alone", "bn": "আরও কি" },
-  { "hanzi": "合影", "pinyin": "héyǐng", "meaning": "group photo", "bn": "গ্রুপ ছবি" },
-  { "hanzi": "核心", "pinyin": "héxīn", "meaning": "core", "bn": "কেন্দ্র" },
-  { "hanzi": "后果", "pinyin": "hòuguǒ", "meaning": "consequence", "bn": "ফলাফল" },
-  { "hanzi": "忽然", "pinyin": "hūrán", "meaning": "suddenly", "bn": "হঠাৎ" },
-  { "hanzi": "呼吸", "pinyin": "hūxī", "meaning": "breathe", "bn": "শ্বাস নেওয়া" },
-  { "hanzi": "蝴蝶", "pinyin": "húdié", "meaning": "butterfly", "bn": "প্রজাপতি" },
-  { "hanzi": "胡同", "pinyin": "hútòng", "meaning": "alley", "bn": "গলি" },
-  { "hanzi": "华裔", "pinyin": "huáyì", "meaning": "ethnic Chinese", "bn": "চীনা বংশোদ্ভূত" },
-  { "hanzi": "滑", "pinyin": "huá", "meaning": "slip", "bn": "পিছলে যাওয়া" },
-  { "hanzi": "化学", "pinyin": "huàxué", "meaning": "chemistry", "bn": "রসায়ন" },
-  { "hanzi": "缓解", "pinyin": "huǎnjiě", "meaning": "relieve", "bn": "উপশম করা" },
-  { "hanzi": "幻想", "pinyin": "huànxiǎng", "meaning": "fantasy", "bn": "কল্পনা" },
-  { "hanzi": "挥", "pinyin": "huī", "meaning": "wave", "bn": "নাড়া" },
-  { "hanzi": "灰尘", "pinyin": "huīchén", "meaning": "dust", "bn": "ধুলো" },
-  { "hanzi": "恢复", "pinyin": "huīfù", "meaning": "recover", "bn": "পুনরুদ্ধার" },
-  { "hanzi": "汇率", "pinyin": "huìlǜ", "meaning": "exchange rate", "bn": "বিনিময় হার" },
-  { "hanzi": "婚姻", "pinyin": "hūnyīn", "meaning": "marriage", "bn": "বিবাহ" },
-  { "hanzi": "火柴", "pinyin": "huǒchái", "meaning": "match", "bn": "দিয়াশলাই" },
-  { "hanzi": "激烈", "pinyin": "jīliè", "meaning": "intense", "bn": "তীব্র" },
-  { "hanzi": "肌肉", "pinyin": "jīròu", "meaning": "muscle", "bn": "পেশী" },
-  { "hanzi": "极其", "pinyin": "jíqí", "meaning": "extremely", "bn": "অত্যন্ত" },
-  { "hanzi": "集体", "pinyin": "jítǐ", "meaning": "collective", "bn": "সামষ্টিক" },
-  { "hanzi": "急忙", "pinyin": "jímáng", "meaning": "hurriedly", "bn": "তাড়াহুড়া করে" },
-  { "hanzi": "记录", "pinyin": "jìlù", "meaning": "record", "bn": "রেকর্ড" },
-  { "hanzi": "计算", "pinyin": "jìsuàn", "meaning": "calculate", "bn": "গণনা করা" },
-  { "hanzi": "系领带", "pinyin": "jìlǐngdài", "meaning": "wear a tie", "bn": "টাই পরা" },
-  { "hanzi": "纪律", "pinyin": "jìlǜ", "meaning": "discipline", "bn": "শৃঙ্খলা" },
-  { "hanzi": "寂寞", "pinyin": "jìmò", "meaning": "lonely", "bn": "একাকী" },
-  { "hanzi": "家庭", "pinyin": "jiātíng", "meaning": "family", "bn": "পরিবার" },
-  { "hanzi": "家乡", "pinyin": "jiāxiāng", "meaning": "hometown", "bn": "গ্রামের বাড়ি" },
-  { "hanzi": "夹子", "pinyin": "jiāzi", "meaning": "clip", "bn": "ক্লিপ" },
-  { "hanzi": "假设", "pinyin": "jiǎshè", "meaning": "suppose", "bn": "ধরে নেওয়া" },
-  { "hanzi": "嫁", "pinyin": "jià", "meaning": "marry", "bn": "বিয়ে দেওয়া" },
-  { "hanzi": "价值", "pinyin": "jiàzhí", "meaning": "value", "bn": "মূল্য" },
-  { "hanzi": "肩膀", "pinyin": "jiānbǎng", "meaning": "shoulder", "bn": "কাঁধ" },
-  { "hanzi": "坚决", "pinyin": "jiānjué", "meaning": "firm", "bn": "দৃঢ়" },
-  { "hanzi": "艰巨", "pinyin": "jiānjù", "meaning": "arduous", "bn": "কঠিন" },
-  { "hanzi": "兼职", "pinyin": "jiānzhí", "meaning": "part-time", "bn": "খণ্ডকালীন" },
-  { "hanzi": "简历", "pinyin": "jiǎnlì", "meaning": "resume", "bn": "জীবনবৃত্তান্ত" },
-  { "hanzi": "剪刀", "pinyin": "jiǎndāo", "meaning": "scissors", "bn": "কাঁচি" },
-  { "hanzi": "建立", "pinyin": "jiànlì", "meaning": "establish", "bn": "প্রতিষ্ঠা করা" },
-  { "hanzi": "讲究", "pinyin": "jiǎngjiu", "meaning": "pay attention", "bn": "গুরুত্ব দেওয়া" },
-  { "hanzi": "交际", "pinyin": "jiāojì", "meaning": "communication", "bn": "যোগাযোগ" },
-  { "hanzi": "胶水", "pinyin": "jiāoshuǐ", "meaning": "glue", "bn": "আঠা" },
-  { "hanzi": "狡猾", "pinyin": "jiǎohuá", "meaning": "cunning", "bn": "চতুর" },
-  { "hanzi": "教练", "pinyin": "jiàoliàn", "meaning": "coach", "bn": "কোচ" },
-  { "hanzi": "接触", "pinyin": "jiēchù", "meaning": "contact", "bn": "সংস্পর্শ" },
-  { "hanzi": "接近", "pinyin": "jiējìn", "meaning": "approach", "bn": "কাছে আসা" },
-  { "hanzi": "阶段", "pinyin": "jiēduàn", "meaning": "stage", "bn": "ধাপ" },
-  { "hanzi": "戒指", "pinyin": "jièzhi", "meaning": "ring", "bn": "আংটি" },
-  { "hanzi": "金属", "pinyin": "jīnshǔ", "meaning": "metal", "bn": "ধাতু" },
-  { "hanzi": "进口", "pinyin": "jìnkǒu", "meaning": "import", "bn": "আমদানি" },
-  { "hanzi": "尽力", "pinyin": "jìnlì", "meaning": "try one's best", "bn": "সর্বোচ্চ চেষ্টা করা" },
-  { "hanzi": "精力", "pinyin": "jīnglì", "meaning": "energy", "bn": "শক্তি" },
-  { "hanzi": "经商", "pinyin": "jīngshāng", "meaning": "do business", "bn": "ব্যবসা করা" },
-  { "hanzi": "经营", "pinyin": "jīngyíng", "meaning": "manage", "bn": "পরিচালনা করা" },
-  { "hanzi": "酒吧", "pinyin": "jiǔbā", "meaning": "bar", "bn": "বার" },
-  { "hanzi": "救护车", "pinyin": "jiùhùchē", "meaning": "ambulance", "bn": "অ্যাম্বুলেন্স" },
-  { "hanzi": "居然", "pinyin": "jūrán", "meaning": "unexpectedly", "bn": "অপ্রত্যাশিতভাবে" },
-  { "hanzi": "具体", "pinyin": "jùtǐ", "meaning": "specific", "bn": "নির্দিষ্ট" },
-  { "hanzi": "俱乐部", "pinyin": "jùlèbù", "meaning": "club", "bn": "ক্লাব" },
-  { "hanzi": "据说", "pinyin": "jùshuō", "meaning": "it is said", "bn": "শোনা যায়" },
-  { "hanzi": "捐", "pinyin": "juān", "meaning": "donate", "bn": "দান করা" },
-  { "hanzi": "决心", "pinyin": "juéxīn", "meaning": "determination", "bn": "সংকল্প" },
-  { "hanzi": "角色", "pinyin": "juésè", "meaning": "role", "bn": "ভূমিকা" },
-  { "hanzi": "均匀", "pinyin": "jūnyún", "meaning": "even", "bn": "সমান" },
-  { "hanzi": "卡车", "pinyin": "kǎchē", "meaning": "truck", "bn": "ট্রাক" },
-  { "hanzi": "开发", "pinyin": "kāifā", "meaning": "develop", "bn": "উন্নয়ন করা" },
-  { "hanzi": "开幕式", "pinyin": "kāimùshì", "meaning": "opening ceremony", "bn": "উদ্বোধনী অনুষ্ঠান" },
-  { "hanzi": "看望", "pinyin": "kànwàng", "meaning": "visit", "bn": "দেখা করতে যাওয়া" },
-  { "hanzi": "靠", "pinyin": "kào", "meaning": "lean", "bn": "ভর করা" },
-  { "hanzi": "颗", "pinyin": "kē", "meaning": "classifier for small objects", "bn": "ছোট বস্তু গণনা" },
-  { "hanzi": "可靠", "pinyin": "kěkào", "meaning": "reliable", "bn": "বিশ্বাসযোগ্য" },
-  { "hanzi": "课程", "pinyin": "kèchéng", "meaning": "curriculum", "bn": "পাঠ্যক্রম" },
-  { "hanzi": "克服", "pinyin": "kèfú", "meaning": "overcome", "bn": "জয় করা" },
-  { "hanzi": "刻苦", "pinyin": "kèkǔ", "meaning": "hardworking", "bn": "পরিশ্রমী" },
-  { "hanzi": "空间", "pinyin": "kōngjiān", "meaning": "space", "bn": "স্থান" },
-  { "hanzi": "空闲", "pinyin": "kòngxián", "meaning": "free time", "bn": "অবসর" },
-  { "hanzi": "夸张", "pinyin": "kuāzhāng", "meaning": "exaggerate", "bn": "অতিরঞ্জন করা" },
-  { "hanzi": "会计", "pinyin": "kuàijì", "meaning": "accountant", "bn": "হিসাবরক্ষক" },
-  { "hanzi": "宽", "pinyin": "kuān", "meaning": "wide", "bn": "প্রশস্ত" },
-  { "hanzi": "昆虫", "pinyin": "kūnchóng", "meaning": "insect", "bn": "পোকামাকড়" },
-  { "hanzi": "拦", "pinyin": "lán", "meaning": "block", "bn": "বাধা দেওয়া" },
-  { "hanzi": "朗读", "pinyin": "lǎngdú", "meaning": "read aloud", "bn": "উচ্চস্বরে পড়া" },
-  { "hanzi": "劳驾", "pinyin": "láojià", "meaning": "excuse me", "bn": "মাফ করবেন" },
-  { "hanzi": "老百姓", "pinyin": "lǎobǎixìng", "meaning": "common people", "bn": "সাধারণ মানুষ" },
-  { "hanzi": "老实", "pinyin": "lǎoshi", "meaning": "honest", "bn": "সৎ" },
-  { "hanzi": "老婆", "pinyin": "lǎopó", "meaning": "wife", "bn": "স্ত্রী" },
-  { "hanzi": "乐观", "pinyin": "lèguān", "meaning": "optimistic", "bn": "আশাবাদী" },
-  { "hanzi": "雷", "pinyin": "léi", "meaning": "thunder", "bn": "বজ্রপাত" },
-  { "hanzi": "类型", "pinyin": "lèixíng", "meaning": "type", "bn": "ধরন" },
-  { "hanzi": "冷淡", "pinyin": "lěngdàn", "meaning": "indifferent", "bn": "উদাসীন" },
-  { "hanzi": "梨", "pinyin": "lí", "meaning": "pear", "bn": "নাশপাতি" },
-  { "hanzi": "离婚", "pinyin": "líhūn", "meaning": "divorce", "bn": "ডিভোর্স" },
-  { "hanzi": "厘米", "pinyin": "límǐ", "meaning": "centimetre", "bn": "সেন্টিমিটার" },
-  { "hanzi": "立即", "pinyin": "lìjí", "meaning": "immediately", "bn": "তৎক্ষণাৎ" },
-  { "hanzi": "利润", "pinyin": "lìrùn", "meaning": "profit", "bn": "মুনাফা" },
-  { "hanzi": "利益", "pinyin": "lìyì", "meaning": "benefit", "bn": "সুবিধা" },
-  { "hanzi": "连续", "pinyin": "liánxù", "meaning": "continuous", "bn": "অবিরত" },
-  { "hanzi": "恋爱", "pinyin": "liàn'ài", "meaning": "love", "bn": "ভালোবাসা" },
-  { "hanzi": "良好", "pinyin": "liánghǎo", "meaning": "good", "bn": "ভালো" },
-  { "hanzi": "粮食", "pinyin": "liángshi", "meaning": "grain", "bn": "শস্য" },
-  { "hanzi": "亮", "pinyin": "liàng", "meaning": "bright", "bn": "উজ্জ্বল" },
-  { "hanzi": "铃", "pinyin": "líng", "meaning": "bell", "bn": "ঘণ্টা" },
-  { "hanzi": "零件", "pinyin": "língjiàn", "meaning": "spare part", "bn": "অংশ" },
-  { "hanzi": "零食", "pinyin": "língshí", "meaning": "snack", "bn": "চটি খাবার" },
-  { "hanzi": "领导", "pinyin": "lǐngdǎo", "meaning": "leader", "bn": "নেতা" },
-  { "hanzi": "流泪", "pinyin": "liúlèi", "meaning": "shed tears", "bn": "চোখের জল পড়া" },
-  { "hanzi": "陆续", "pinyin": "lùxù", "meaning": "one after another", "bn": "একের পর এক" },
-  { "hanzi": "录音", "pinyin": "lùyīn", "meaning": "recording", "bn": "রেকর্ডিং" },
-  { "hanzi": "轮流", "pinyin": "lúnliú", "meaning": "take turns", "bn": "পালা করা" },
-  { "hanzi": "逻辑", "pinyin": "luóji", "meaning": "logic", "bn": "যুক্তি" },
-  { "hanzi": "馒头", "pinyin": "mántou", "meaning": "steamed bun", "bn": "ভাপা পাউরুটি" },
-  { "hanzi": "毛病", "pinyin": "máobìng", "meaning": "problem", "bn": "সমস্যা" },
-  { "hanzi": "矛盾", "pinyin": "máodùn", "meaning": "contradiction", "bn": "বিরোধ" },
-  { "hanzi": "贸易", "pinyin": "màoyì", "meaning": "trade", "bn": "বাণিজ্য" },
-  { "hanzi": "媒体", "pinyin": "méitǐ", "meaning": "media", "bn": "গণমাধ্যম" },
-  { "hanzi": "煤炭", "pinyin": "méitàn", "meaning": "coal", "bn": "কয়লা" },
-  { "hanzi": "魅力", "pinyin": "mèilì", "meaning": "charm", "bn": "আকর্ষণ" },
-  { "hanzi": "梦想", "pinyin": "mèngxiǎng", "meaning": "dream", "bn": "স্বপ্ন" },
-  { "hanzi": "蜜蜂", "pinyin": "mìfēng", "meaning": "bee", "bn": "মৌমাছি" },
-  { "hanzi": "密切", "pinyin": "mìqiè", "meaning": "close", "bn": "ঘনিষ্ঠ" },
-  { "hanzi": "秘书", "pinyin": "mìshū", "meaning": "secretary", "bn": "সচিব" },
-  { "hanzi": "面积", "pinyin": "miànjī", "meaning": "area", "bn": "ক্ষেত্রফল" },
-  { "hanzi": "描写", "pinyin": "miáoxiě", "meaning": "describe", "bn": "বর্ণনা করা" },
-  { "hanzi": "敏感", "pinyin": "mǐngǎn", "meaning": "sensitive", "bn": "সংবেদনশীল" },
-  { "hanzi": "明星", "pinyin": "míngxīng", "meaning": "star", "bn": "তারকা" },
-  { "hanzi": "名片", "pinyin": "míngpiàn", "meaning": "business card", "bn": "ভিজিটিং কার্ড" },
-  { "hanzi": "命运", "pinyin": "mìngyùn", "meaning": "fate", "bn": "ভাগ্য" },
-  { "hanzi": "模仿", "pinyin": "mófǎng", "meaning": "imitate", "bn": "অনুকরণ করা" },
-  { "hanzi": "模特", "pinyin": "mótè", "meaning": "model", "bn": "মডেল" },
-  { "hanzi": "陌生", "pinyin": "mòshēng", "meaning": "strange", "bn": "অপরিচিত" },
-  { "hanzi": "目前", "pinyin": "mùqián", "meaning": "at present", "bn": "বর্তমানে" },
-  { "hanzi": "难怪", "pinyin": "nánguài", "meaning": "no wonder", "bn": "অবাক হওয়ার কিছু নেই" },
-  { "hanzi": "内部", "pinyin": "nèibù", "meaning": "interior", "bn": "অভ্যন্তর" },
-  { "hanzi": "嗯", "pinyin": "en", "meaning": "uh-huh", "bn": "হ্যাঁ" },
-  { "hanzi": "念", "pinyin": "niàn", "meaning": "read", "bn": "পড়া" },
-  { "hanzi": "浓", "pinyin": "nóng", "meaning": "thick", "bn": "ঘন" },
-  { "hanzi": "农民", "pinyin": "nóngmín", "meaning": "farmer", "bn": "কৃষক" },
-  { "hanzi": "欧洲", "pinyin": "Ōuzhōu", "meaning": "Europe", "bn": "ইউরোপ" },
-  { "hanzi": "偶然", "pinyin": "ǒurán", "meaning": "accidental", "bn": "আকস্মিক" },
-  { "hanzi": "拍", "pinyin": "pāi", "meaning": "beat", "bn": "আঘাত করা" },
-  { "hanzi": "盼望", "pinyin": "pànwàng", "meaning": "look forward", "bn": "আশা করা" },
-  { "hanzi": "培训", "pinyin": "péixùn", "meaning": "train", "bn": "প্রশিক্ষণ" },
-  { "hanzi": "佩服", "pinyin": "pèifu", "meaning": "admire", "bn": "সম্মান করা" },
-  { "hanzi": "盆", "pinyin": "pén", "meaning": "basin", "bn": "বেসিন" },
-  { "hanzi": "碰", "pinyin": "pèng", "meaning": "touch", "bn": "স্পর্শ করা" },
-  { "hanzi": "批", "pinyin": "pī", "meaning": "batch", "bn": "ব্যাচ" },
-  { "hanzi": "批准", "pinyin": "pīzhǔn", "meaning": "approve", "bn": "অনুমোদন করা" },
-  { "hanzi": "疲劳", "pinyin": "píláo", "meaning": "tired", "bn": "ক্লান্ত" },
-  { "hanzi": "匹", "pinyin": "pǐ", "meaning": "classifier for horses", "bn": "ঘোড়া গণনা" },
-  { "hanzi": "片", "pinyin": "piàn", "meaning": "slice", "bn": "ফালি" },
-  { "hanzi": "飘", "pinyin": "piāo", "meaning": "float", "bn": "ভাসা" },
-  { "hanzi": "频道", "pinyin": "píndào", "meaning": "channel", "bn": "চ্যানেল" },
-  { "hanzi": "凭", "pinyin": "píng", "meaning": "by", "bn": "দ্বারা" },
-  { "hanzi": "平安", "pinyin": "píng'ān", "meaning": "safe", "bn": "নিরাপদ" },
-  { "hanzi": "平等", "pinyin": "píngděng", "meaning": "equality", "bn": "সমতা" },
-  { "hanzi": "平衡", "pinyin": "pínghéng", "meaning": "balance", "bn": "সাম্য" },
-  { "hanzi": "平均", "pinyin": "píngjūn", "meaning": "average", "bn": "গড়" },
-  { "hanzi": "破产", "pinyin": "pòchǎn", "meaning": "bankrupt", "bn": "দেউলিয়া" },
-  { "hanzi": "迫切", "pinyin": "pòqiè", "meaning": "urgent", "bn": "জরুরি" },
-  { "hanzi": "期间", "pinyin": "qījiān", "meaning": "period", "bn": "সময়কাল" },
-  { "hanzi": "其余", "pinyin": "qíyú", "meaning": "the rest", "bn": "বাকি" },
-  { "hanzi": "企业", "pinyin": "qǐyè", "meaning": "enterprise", "bn": "উদ্যোগ" },
-  { "hanzi": "前途", "pinyin": "qiántú", "meaning": "future", "bn": "ভবিষ্যৎ" },
-  { "hanzi": "欠", "pinyin": "qiàn", "meaning": "owe", "bn": "ঋণী থাকা" },
-  { "hanzi": "墙", "pinyin": "qiáng", "meaning": "wall", "bn": "প্রাচীর" },
-  { "hanzi": "强烈", "pinyin": "qiángliè", "meaning": "strong", "bn": "তীব্র" },
-  { "hanzi": "切", "pinyin": "qiē", "meaning": "cut", "bn": "কাটা" },
-  { "hanzi": "亲自", "pinyin": "qīnzì", "meaning": "personally", "bn": "নিজে" },
-  { "hanzi": "青", "pinyin": "qīng", "meaning": "green/blue", "bn": "সবুজ/নীল" },
-  { "hanzi": "青少年", "pinyin": "qīngshàonián", "meaning": "teenager", "bn": "কিশোর" },
-  { "hanzi": "轻易", "pinyin": "qīngyì", "meaning": "easily", "bn": "সহজে" },
-  { "hanzi": "清淡", "pinyin": "qīngdàn", "meaning": "light (taste)", "bn": "হালকা স্বাদ" },
-  { "hanzi": "情景", "pinyin": "qíngjǐng", "meaning": "scene", "bn": "দৃশ্য" },
-  { "hanzi": "情绪", "pinyin": "qíngxù", "meaning": "emotion", "bn": "আবেগ" },
-  { "hanzi": "庆祝", "pinyin": "qìngzhù", "meaning": "celebrate", "bn": "উদযাপন করা" },
-  { "hanzi": "娶", "pinyin": "qǔ", "meaning": "marry (a woman)", "bn": "বিয়ে করা (মেয়ে)" },
-  { "hanzi": "取消", "pinyin": "qǔxiāo", "meaning": "cancel", "bn": "বাতিল করা" },
-  { "hanzi": "圈", "pinyin": "quān", "meaning": "circle", "bn": "বৃত্ত" },
-  { "hanzi": "全面", "pinyin": "quánmiàn", "meaning": "comprehensive", "bn": "সর্বাঙ্গীণ" },
-  { "hanzi": "权利", "pinyin": "quánlì", "meaning": "right", "bn": "অধিকার" },
-  { "hanzi": "确定", "pinyin": "quèdìng", "meaning": "confirm", "bn": "নিশ্চিত করা" },
-  { "hanzi": "热烈", "pinyin": "rèliè", "meaning": "warm", "bn": "উষ্ণ" },
-  { "hanzi": "人口", "pinyin": "rénkǒu", "meaning": "population", "bn": "জনসংখ্যা" },
-  { "hanzi": "人民币", "pinyin": "rénmínbì", "meaning": "RMB", "bn": "চীনা মুদ্রা" },
-  { "hanzi": "人事", "pinyin": "rénshì", "meaning": "personnel", "bn": "কর্মচারী" },
-  { "hanzi": "人员", "pinyin": "rényuán", "meaning": "staff", "bn": "কর্মী" },
-  { "hanzi": "日常", "pinyin": "rìcháng", "meaning": "daily", "bn": "দৈনন্দিন" },
-  { "hanzi": "日期", "pinyin": "rìqī", "meaning": "date", "bn": "তারিখ" },
-  { "hanzi": "日子", "pinyin": "rìzi", "meaning": "days", "bn": "দিনগুলো" },
-  { "hanzi": "如今", "pinyin": "rújīn", "meaning": "nowadays", "bn": "আজকাল" },
-  { "hanzi": "软", "pinyin": "ruǎn", "meaning": "soft", "bn": "নরম" },
-  { "hanzi": "弱", "pinyin": "ruò", "meaning": "weak", "bn": "দুর্বল" },
-  { "hanzi": "色彩", "pinyin": "sècǎi", "meaning": "colour", "bn": "রঙ" },
-  { "hanzi": "杀", "pinyin": "shā", "meaning": "kill", "bn": "হত্যা করা" },
-  { "hanzi": "沙漠", "pinyin": "shāmò", "meaning": "desert", "bn": "মরুভূমি" },
-  { "hanzi": "傻", "pinyin": "shǎ", "meaning": "silly", "bn": "বোকা" },
-  { "hanzi": "删除", "pinyin": "shānchú", "meaning": "delete", "bn": "মুছে ফেলা" },
-  { "hanzi": "善良", "pinyin": "shànliáng", "meaning": "kind", "bn": "দয়ালু" },
-  { "hanzi": "扇子", "pinyin": "shànzi", "meaning": "fan", "bn": "পাখা" },
-  { "hanzi": "商业", "pinyin": "shāngyè", "meaning": "commerce", "bn": "বাণিজ্য" },
-  { "hanzi": "上当", "pinyin": "shàngdàng", "meaning": "be fooled", "bn": "প্রতারিত হওয়া" },
-  { "hanzi": "蛇", "pinyin": "shé", "meaning": "snake", "bn": "সাপ" },
-  { "hanzi": "设备", "pinyin": "shèbèi", "meaning": "equipment", "bn": "যন্ত্রপাতি" },
-  { "hanzi": "设施", "pinyin": "shèshī", "meaning": "facilities", "bn": "সুবিধা" },
-  { "hanzi": "射击", "pinyin": "shèjī", "meaning": "shoot", "bn": "গুলি করা" },
-  { "hanzi": "身材", "pinyin": "shēncái", "meaning": "figure", "bn": "গঠন" },
-  { "hanzi": "神话", "pinyin": "shénhuà", "meaning": "myth", "bn": "পৌরাণিক কাহিনী" },
-  { "hanzi": "升", "pinyin": "shēng", "meaning": "rise", "bn": "উত্থান" },
-  { "hanzi": "生产", "pinyin": "shēngchǎn", "meaning": "produce", "bn": "উৎপাদন করা" },
-  { "hanzi": "声调", "pinyin": "shēngdiào", "meaning": "tone", "bn": "স্বর" },
-  { "hanzi": "绳子", "pinyin": "shéngzi", "meaning": "rope", "bn": "দড়ি" },
-  { "hanzi": "省略", "pinyin": "shěnglüè", "meaning": "omit", "bn": "বাদ দেওয়া" },
-  { "hanzi": "胜利", "pinyin": "shènglì", "meaning": "victory", "bn": "বিজয়" },
-  { "hanzi": "失去", "pinyin": "shīqù", "meaning": "lose", "bn": "হারানো" },
-  { "hanzi": "失业", "pinyin": "shīyè", "meaning": "unemployed", "bn": "বেকার" },
-  { "hanzi": "湿润", "pinyin": "shīrùn", "meaning": "moist", "bn": "ভেজা" },
-  { "hanzi": "时差", "pinyin": "shíchā", "meaning": "time difference", "bn": "সময় ব্যবধান" },
-  { "hanzi": "时刻", "pinyin": "shíkè", "meaning": "moment", "bn": "মুহূর্ত" },
-  { "hanzi": "时期", "pinyin": "shíqī", "meaning": "period", "bn": "সময়কাল" },
-  { "hanzi": "实话", "pinyin": "shíhuà", "meaning": "truth", "bn": "সত্য কথা" },
-  { "hanzi": "实践", "pinyin": "shíjiàn", "meaning": "practice", "bn": "অনুশীলন" },
-  { "hanzi": "实现", "pinyin": "shíxiàn", "meaning": "realize", "bn": "বাস্তবায়ন করা" },
-  { "hanzi": "实用", "pinyin": "shíyòng", "meaning": "practical", "bn": "ব্যবহারিক" },
-  { "hanzi": "食物", "pinyin": "shíwù", "meaning": "food", "bn": "খাবার" },
-  { "hanzi": "士兵", "pinyin": "shìbīng", "meaning": "soldier", "bn": "সৈনিক" },
-  { "hanzi": "似的", "pinyin": "shìde", "meaning": "like", "bn": "মতো" },
-  { "hanzi": "事实", "pinyin": "shìshí", "meaning": "fact", "bn": "সত্য" },
-  { "hanzi": "事先", "pinyin": "shìxiān", "meaning": "in advance", "bn": "আগে থেকে" },
-  { "hanzi": "收获", "pinyin": "shōuhuò", "meaning": "harvest", "bn": "ফসল" },
-  { "hanzi": "手套", "pinyin": "shǒutào", "meaning": "glove", "bn": "দস্তানা" },
-  { "hanzi": "手指", "pinyin": "shǒuzhǐ", "meaning": "finger", "bn": "আঙুল" },
-  { "hanzi": "蔬菜", "pinyin": "shūcài", "meaning": "vegetable", "bn": "সবজি" },
-  { "hanzi": "舒适", "pinyin": "shūshì", "meaning": "comfortable", "bn": "আরামদায়ক" },
-  { "hanzi": "梳子", "pinyin": "shūzi", "meaning": "comb", "bn": "চিরুনি" },
-  { "hanzi": "属于", "pinyin": "shǔyú", "meaning": "belong to", "bn": "অন্তর্গত হওয়া" },
-  { "hanzi": "数", "pinyin": "shǔ", "meaning": "count", "bn": "গণনা করা" },
-  { "hanzi": "甩", "pinyin": "shuǎi", "meaning": "throw away", "bn": "ফেলে দেওয়া" },
-  { "hanzi": "说不定", "pinyin": "shuōbudìng", "meaning": "maybe", "bn": "হয়তো" },
-  { "hanzi": "撕", "pinyin": "sī", "meaning": "tear", "bn": "ছিঁড়ে ফেলা" },
-  { "hanzi": "丝毫", "pinyin": "sīháo", "meaning": "a bit", "bn": "একটুও" },
-  { "hanzi": "思考", "pinyin": "sīkǎo", "meaning": "think", "bn": "চিন্তা করা" },
-  { "hanzi": "私人", "pinyin": "sīrén", "meaning": "private", "bn": "ব্যক্তিগত" },
-  { "hanzi": "搜索", "pinyin": "sōusuǒ", "meaning": "search", "bn": "অনুসন্ধান করা" },
-  { "hanzi": "宿舍", "pinyin": "sùshè", "meaning": "dormitory", "bn": "ডরমিটরি" },
-  { "hanzi": "随时", "pinyin": "suíshí", "meaning": "anytime", "bn": "যেকোনো সময়" },
-  { "hanzi": "随手", "pinyin": "suíshǒu", "meaning": "conveniently", "bn": "সহজেই" },
-  { "hanzi": "缩短", "pinyin": "suōduǎn", "meaning": "shorten", "bn": "ছোট করা" },
-  { "hanzi": "所", "pinyin": "suǒ", "meaning": "place", "bn": "স্থান" },
-  { "hanzi": "太太", "pinyin": "tàitai", "meaning": "madam", "bn": "মহিলা" },
-  { "hanzi": "谈判", "pinyin": "tánpàn", "meaning": "negotiation", "bn": "আলোচনা" },
-  { "hanzi": "坦率", "pinyin": "tǎnshuài", "meaning": "frank", "bn": "স্পষ্টভাষী" },
-  { "hanzi": "烫", "pinyin": "tàng", "meaning": "hot", "bn": "গরম" },
-  { "hanzi": "桃", "pinyin": "táo", "meaning": "peach", "bn": "পীচ" },
-  { "hanzi": "逃避", "pinyin": "táobì", "meaning": "escape", "bn": "পালানো" },
-  { "hanzi": "特殊", "pinyin": "tèshū", "meaning": "special", "bn": "বিশেষ" },
-  { "hanzi": "特征", "pinyin": "tèzhēng", "meaning": "feature", "bn": "বৈশিষ্ট্য" },
-  { "hanzi": "疼爱", "pinyin": "téng'ài", "meaning": "love dearly", "bn": "আদর করা" },
-  { "hanzi": "提纲", "pinyin": "tígāng", "meaning": "outline", "bn": "সারাংশ" },
-  { "hanzi": "提问", "pinyin": "tíwèn", "meaning": "ask", "bn": "প্রশ্ন করা" },
-  { "hanzi": "体会", "pinyin": "tǐhuì", "meaning": "experience", "bn": "অভিজ্ঞতা" },
-  { "hanzi": "体现", "pinyin": "tǐxiàn", "meaning": "reflect", "bn": "প্রতিফলিত করা" },
-  { "hanzi": "调皮", "pinyin": "tiáopí", "meaning": "naughty", "bn": "দুষ্টু" },
-  { "hanzi": "挑战", "pinyin": "tiǎozhàn", "meaning": "challenge", "bn": "চ্যালেঞ্জ" },
-  { "hanzi": "痛苦", "pinyin": "tòngkǔ", "meaning": "pain", "bn": "যন্ত্রণা" },
-  { "hanzi": "投入", "pinyin": "tóurù", "meaning": "put in", "bn": "বিনিয়োগ করা" },
-  { "hanzi": "透明", "pinyin": "tòumíng", "meaning": "transparent", "bn": "স্বচ্ছ" },
-  { "hanzi": "土地", "pinyin": "tǔdì", "meaning": "land", "bn": "জমি" },
-  { "hanzi": "吐", "pinyin": "tù", "meaning": "spit", "bn": "থুথু ফেলা" },
-  { "hanzi": "团", "pinyin": "tuán", "meaning": "group", "bn": "দল" },
-  { "hanzi": "推广", "pinyin": "tuīguǎng", "meaning": "promote", "bn": "প্রচার করা" },
-  { "hanzi": "退步", "pinyin": "tuìbù", "meaning": "backward", "bn": "পিছনে" },
-  { "hanzi": "歪", "pinyin": "wāi", "meaning": "crooked", "bn": "বাঁকা" },
-  { "hanzi": "外交", "pinyin": "wàijiāo", "meaning": "diplomacy", "bn": "কূটনীতি" },
-  { "hanzi": "完美", "pinyin": "wánměi", "meaning": "perfect", "bn": "নিখুঁত" },
-  { "hanzi": "完善", "pinyin": "wánshàn", "meaning": "perfect", "bn": "উন্নত করা" },
-  { "hanzi": "王子", "pinyin": "wángzǐ", "meaning": "prince", "bn": "রাজকুমার" },
-  { "hanzi": "往返", "pinyin": "wǎngfǎn", "meaning": "go back and forth", "bn": "আসা-যাওয়া" },
-  { "hanzi": "网络", "pinyin": "wǎngluò", "meaning": "network", "bn": "নেটওয়ার্ক" },
-  { "hanzi": "危害", "pinyin": "wēihài", "meaning": "harm", "bn": "ক্ষতি" },
-  { "hanzi": "微笑", "pinyin": "wēixiào", "meaning": "smile", "bn": "হাসি" },
-  { "hanzi": "违反", "pinyin": "wéifǎn", "meaning": "violate", "bn": "লঙ্ঘন করা" },
-  { "hanzi": "围巾", "pinyin": "wéijīn", "meaning": "scarf", "bn": "মাফলার" },
-  { "hanzi": "唯一", "pinyin": "wéiyī", "meaning": "only", "bn": "একমাত্র" },
-  { "hanzi": "伟大", "pinyin": "wěidà", "meaning": "great", "bn": "মহান" },
-  { "hanzi": "胃口", "pinyin": "wèikǒu", "meaning": "appetite", "bn": "ক্ষুধা" },
-  { "hanzi": "位置", "pinyin": "wèizhì", "meaning": "position", "bn": "অবস্থান" },
-  { "hanzi": "未来", "pinyin": "wèilái", "meaning": "future", "bn": "ভবিষ্যৎ" },
-  { "hanzi": "温暖", "pinyin": "wēnnuǎn", "meaning": "warm", "bn": "উষ্ণ" },
-  { "hanzi": "闻", "pinyin": "wén", "meaning": "smell", "bn": "গন্ধ পাওয়া" },
-  { "hanzi": "文件", "pinyin": "wénjiàn", "meaning": "document", "bn": "নথি" },
-  { "hanzi": "文明", "pinyin": "wénmíng", "meaning": "civilization", "bn": "সভ্যতা" },
-  { "hanzi": "文字", "pinyin": "wénzì", "meaning": "writing", "bn": "লেখা" },
-  { "hanzi": "吻", "pinyin": "wěn", "meaning": "kiss", "bn": "চুম্বন" },
-  { "hanzi": "握手", "pinyin": "wòshǒu", "meaning": "shake hands", "bn": "হাত মেলানো" },
-  { "hanzi": "屋子", "pinyin": "wūzi", "meaning": "room", "bn": "ঘর" },
-  { "hanzi": "无奈", "pinyin": "wúnài", "meaning": "helpless", "bn": "অসহায়" },
-  { "hanzi": "无所谓", "pinyin": "wúsuǒwèi", "meaning": "indifferent", "bn": "উদাসীন" },
-  { "hanzi": "武术", "pinyin": "wǔshù", "meaning": "martial arts", "bn": "মার্শাল আর্টস" },
-  { "hanzi": "雾", "pinyin": "wù", "meaning": "fog", "bn": "কুয়াশা" },
-  { "hanzi": "物理", "pinyin": "wùlǐ", "meaning": "physics", "bn": "পদার্থবিজ্ঞান" },
-  { "hanzi": "吸收", "pinyin": "xīshōu", "meaning": "absorb", "bn": "শোষণ করা" },
-  { "hanzi": "系", "pinyin": "xì", "meaning": "department", "bn": "বিভাগ" },
-  { "hanzi": "细节", "pinyin": "xìjié", "meaning": "detail", "bn": "বিস্তারিত" },
-  { "hanzi": "瞎", "pinyin": "xiā", "meaning": "blind", "bn": "অন্ধ" },
-  { "hanzi": "鲜艳", "pinyin": "xiānyàn", "meaning": "bright-coloured", "bn": "উজ্জ্বল রঙের" },
-  { "hanzi": "显得", "pinyin": "xiǎnde", "meaning": "appear", "bn": "মনে হওয়া" },
-  { "hanzi": "显示", "pinyin": "xiǎnshì", "meaning": "display", "bn": "প্রদর্শন করা" },
-  { "hanzi": "现代", "pinyin": "xiàndài", "meaning": "modern", "bn": "আধুনিক" },
-  { "hanzi": "现实", "pinyin": "xiànshí", "meaning": "reality", "bn": "বাস্তবতা" },
-  { "hanzi": "限制", "pinyin": "xiànzhì", "meaning": "limit", "bn": "সীমা" },
-  { "hanzi": "相处", "pinyin": "xiāngchǔ", "meaning": "get along", "bn": "মেলামেশা করা" },
-  { "hanzi": "相对", "pinyin": "xiāngduì", "meaning": "relative", "bn": "আপেক্ষিক" },
-  { "hanzi": "相关", "pinyin": "xiāngguān", "meaning": "related", "bn": "সম্পর্কিত" },
-  { "hanzi": "想象", "pinyin": "xiǎngxiàng", "meaning": "imagine", "bn": "কল্পনা করা" },
-  { "hanzi": "项", "pinyin": "xiàng", "meaning": "item", "bn": "আইটেম" },
-  { "hanzi": "项目", "pinyin": "xiàngmù", "meaning": "project", "bn": "প্রকল্প" },
-  { "hanzi": "象棋", "pinyin": "xiàngqí", "meaning": "Chinese chess", "bn": "চীনা দাবা" },
-  { "hanzi": "消费", "pinyin": "xiāofèi", "meaning": "consume", "bn": "ভোগ করা" },
-  { "hanzi": "消化", "pinyin": "xiāohuà", "meaning": "digest", "bn": "হজম করা" },
-  { "hanzi": "销售", "pinyin": "xiāoshòu", "meaning": "sell", "bn": "বিক্রয় করা" },
-  { "hanzi": "小麦", "pinyin": "xiǎomài", "meaning": "wheat", "bn": "গম" },
-  { "hanzi": "效率", "pinyin": "xiàolǜ", "meaning": "efficiency", "bn": "দক্ষতা" },
-  { "hanzi": "歇", "pinyin": "xiē", "meaning": "rest", "bn": "বিরতি" },
-  { "hanzi": "欣赏", "pinyin": "xīnshǎng", "meaning": "appreciate", "bn": "প্রশংসা করা" },
-  { "hanzi": "信号", "pinyin": "xìnhào", "meaning": "signal", "bn": "সংকেত" },
-  { "hanzi": "行动", "pinyin": "xíngdòng", "meaning": "action", "bn": "ক্রিয়া" },
-  { "hanzi": "行人", "pinyin": "xíngrén", "meaning": "pedestrian", "bn": "পথচারী" },
-  { "hanzi": "形成", "pinyin": "xíngchéng", "meaning": "form", "bn": "গঠন করা" },
-  { "hanzi": "形式", "pinyin": "xíngshì", "meaning": "form", "bn": "ফর্ম" },
-  { "hanzi": "形象", "pinyin": "xíngxiàng", "meaning": "image", "bn": "ছবি" },
-  { "hanzi": "性质", "pinyin": "xìngzhì", "meaning": "nature", "bn": "প্রকৃতি" },
-  { "hanzi": "幸亏", "pinyin": "xìngkuī", "meaning": "luckily", "bn": "সৌভাগ্যবশত" },
-  { "hanzi": "胸", "pinyin": "xiōng", "meaning": "chest", "bn": "বুক" },
-  { "hanzi": "修改", "pinyin": "xiūgǎi", "meaning": "modify", "bn": "পরিবর্তন করা" },
-  { "hanzi": "休闲", "pinyin": "xiūxián", "meaning": "leisure", "bn": "অবসর" },
-  { "hanzi": "叙述", "pinyin": "xùshù", "meaning": "narrate", "bn": "বর্ণনা করা" },
-  { "hanzi": "宣传", "pinyin": "xuānchuán", "meaning": "propaganda", "bn": "প্রচার" },
-  { "hanzi": "学历", "pinyin": "xuélì", "meaning": "education", "bn": "শিক্ষাগত যোগ্যতা" },
-  { "hanzi": "学问", "pinyin": "xuéwen", "meaning": "knowledge", "bn": "জ্ঞান" },
-  { "hanzi": "血", "pinyin": "xuè", "meaning": "blood", "bn": "রক্ত" },
-  { "hanzi": "寻找", "pinyin": "xúnzhǎo", "meaning": "look for", "bn": "খোঁজা" },
-  { "hanzi": "迅速", "pinyin": "xùnsù", "meaning": "rapid", "bn": "দ্রুত" },
-  { "hanzi": "延长", "pinyin": "yáncháng", "meaning": "extend", "bn": "বাড়ানো" },
-  { "hanzi": "严肃", "pinyin": "yánsù", "meaning": "serious", "bn": "গম্ভীর" },
-  { "hanzi": "演讲", "pinyin": "yǎnjiǎng", "meaning": "speech", "bn": "ভাষণ" },
-  { "hanzi": "阳台", "pinyin": "yángtái", "meaning": "balcony", "bn": "বারান্দা" },
-  { "hanzi": "摇", "pinyin": "yáo", "meaning": "shake", "bn": "নাড়া" },
-  { "hanzi": "要不", "pinyin": "yàobù", "meaning": "or", "bn": "নয়তো" },
-  { "hanzi": "业务", "pinyin": "yèwù", "meaning": "business", "bn": "ব্যবসা" },
-  { "hanzi": "一辈子", "pinyin": "yíbèizi", "meaning": "lifetime", "bn": "জীবনভর" },
-  { "hanzi": "一律", "pinyin": "yílǜ", "meaning": "all", "bn": "সব" },
-  { "hanzi": "移动", "pinyin": "yídòng", "meaning": "move", "bn": "স্থানান্তর করা" },
-  { "hanzi": "遗憾", "pinyin": "yíhàn", "meaning": "regret", "bn": "আফসোস" },
-  { "hanzi": "乙", "pinyin": "yǐ", "meaning": "second", "bn": "দ্বিতীয়" },
-  { "hanzi": "以及", "pinyin": "yǐjí", "meaning": "as well as", "bn": "এবং" },
-  { "hanzi": "亿", "pinyin": "yì", "meaning": "hundred million", "bn": "একশ কোটি" },
-  { "hanzi": "意义", "pinyin": "yìyì", "meaning": "meaning", "bn": "অর্থ" },
-  { "hanzi": "因而", "pinyin": "yīn'ér", "meaning": "thus", "bn": "ফলে" },
-  { "hanzi": "银", "pinyin": "yín", "meaning": "silver", "bn": "রূপা" },
-  { "hanzi": "印刷", "pinyin": "yìnshuā", "meaning": "printing", "bn": "মুদ্রণ" },
-  { "hanzi": "英雄", "pinyin": "yīngxióng", "meaning": "hero", "bn": "বীর" },
-  { "hanzi": "迎接", "pinyin": "yíngjiē", "meaning": "welcome", "bn": "স্বাগত জানানো" },
-  { "hanzi": "营业", "pinyin": "yíngyè", "meaning": "do business", "bn": "ব্যবসা করা" },
-  { "hanzi": "影子", "pinyin": "yǐngzi", "meaning": "shadow", "bn": "ছায়া" },
-  { "hanzi": "硬件", "pinyin": "yìngjiàn", "meaning": "hardware", "bn": "হার্ডওয়্যার" },
-  { "hanzi": "拥抱", "pinyin": "yōngbào", "meaning": "hug", "bn": "জড়িয়ে ধরা" },
-  { "hanzi": "用途", "pinyin": "yòngtú", "meaning": "use", "bn": "ব্যবহার" },
-  { "hanzi": "优美", "pinyin": "yōuměi", "meaning": "graceful", "bn": "সুন্দর" },
-  { "hanzi": "游览", "pinyin": "yóulǎn", "meaning": "sightsee", "bn": "দেখা করা" },
-  { "hanzi": "犹豫", "pinyin": "yóuyù", "meaning": "hesitate", "bn": "দ্বিধা করা" },
-  { "hanzi": "幼儿园", "pinyin": "yòu'éryuán", "meaning": "kindergarten", "bn": "কিন্ডারগার্টেন" },
-  { "hanzi": "与其", "pinyin": "yǔqí", "meaning": "rather than", "bn": "বরং" },
-  { "hanzi": "语气", "pinyin": "yǔqì", "meaning": "tone", "bn": "স্বর" },
-  { "hanzi": "预订", "pinyin": "yùdìng", "meaning": "book", "bn": "বুক করা" },
-  { "hanzi": "玉米", "pinyin": "yùmǐ", "meaning": "corn", "bn": "ভুট্টা" },
-  { "hanzi": "原料", "pinyin": "yuánliào", "meaning": "raw material", "bn": "কাঁচামাল" },
-  { "hanzi": "原则", "pinyin": "yuánzé", "meaning": "principle", "bn": "নীতি" },
-  { "hanzi": "乐器", "pinyin": "yuèqì", "meaning": "musical instrument", "bn": "বাদ্যযন্ত্র" },
-  { "hanzi": "运输", "pinyin": "yùnshū", "meaning": "transport", "bn": "পরিবহন" },
-  { "hanzi": "在于", "pinyin": "zàiyú", "meaning": "lie in", "bn": "নিহিত থাকা" },
-  { "hanzi": "赞美", "pinyin": "zànměi", "meaning": "praise", "bn": "প্রশংসা করা" },
-  { "hanzi": "则", "pinyin": "zé", "meaning": "then", "bn": "তাহলে" },
-  { "hanzi": "摘", "pinyin": "zhāi", "meaning": "pick", "bn": "তোলা" },
-  { "hanzi": "粘贴", "pinyin": "zhāntiē", "meaning": "paste", "bn": "সাঁটানো" },
-  { "hanzi": "展览", "pinyin": "zhǎnlǎn", "meaning": "exhibition", "bn": "প্রদর্শনী" },
-  { "hanzi": "占", "pinyin": "zhàn", "meaning": "occupy", "bn": "দখল করা" },
-  { "hanzi": "战争", "pinyin": "zhànzhēng", "meaning": "war", "bn": "যুদ্ধ" },
-  { "hanzi": "长辈", "pinyin": "zhǎngbèi", "meaning": "elder", "bn": "বড়রা" },
-  { "hanzi": "涨", "pinyin": "zhǎng", "meaning": "rise", "bn": "বাড়া" },
-  { "hanzi": "招待", "pinyin": "zhāodài", "meaning": "entertain", "bn": "আপ্যায়ন করা" },
-  { "hanzi": "着火", "pinyin": "zháohuǒ", "meaning": "catch fire", "bn": "আগুন ধরা" },
-  { "hanzi": "着凉", "pinyin": "zháoliáng", "meaning": "catch cold", "bn": "সর্দি হওয়া" },
-  { "hanzi": "召开", "pinyin": "zhàokāi", "meaning": "convene", "bn": "আহ্বান করা" },
-  { "hanzi": "照常", "pinyin": "zhàocháng", "meaning": "as usual", "bn": "সাধারণভাবে" },
-  { "hanzi": "哲学", "pinyin": "zhéxué", "meaning": "philosophy", "bn": "দর্শন" },
-  { "hanzi": "真实", "pinyin": "zhēnshí", "meaning": "real", "bn": "আসল" },
-  { "hanzi": "针对", "pinyin": "zhēnduì", "meaning": "aim at", "bn": "লক্ষ্য করা" },
-  { "hanzi": "诊断", "pinyin": "zhěnduàn", "meaning": "diagnose", "bn": "রোগ নির্ণয়" },
-  { "hanzi": "振动", "pinyin": "zhèndòng", "meaning": "vibrate", "bn": "কম্পন" },
-  { "hanzi": "争论", "pinyin": "zhēnglùn", "meaning": "argue", "bn": "তর্ক করা" },
-  { "hanzi": "征求", "pinyin": "zhēngqiú", "meaning": "seek", "bn": "অনুসন্ধান করা" },
-  { "hanzi": "整体", "pinyin": "zhěngtǐ", "meaning": "whole", "bn": "সমগ্র" },
-  { "hanzi": "政治", "pinyin": "zhèngzhì", "meaning": "politics", "bn": "রাজনীতি" },
-  { "hanzi": "证据", "pinyin": "zhèngjù", "meaning": "evidence", "bn": "প্রমাণ" },
-  { "hanzi": "挣", "pinyin": "zhèng", "meaning": "earn", "bn": "উপার্জন করা" },
-  { "hanzi": "直", "pinyin": "zhí", "meaning": "straight", "bn": "সোজা" },
-  { "hanzi": "执照", "pinyin": "zhízhào", "meaning": "licence", "bn": "লাইসেন্স" },
-  { "hanzi": "指挥", "pinyin": "zhǐhuī", "meaning": "command", "bn": "নির্দেশ দেওয়া" },
-  { "hanzi": "制度", "pinyin": "zhìdù", "meaning": "system", "bn": "পদ্ধতি" },
-  { "hanzi": "制作", "pinyin": "zhìzuò", "meaning": "make", "bn": "তৈরি করা" },
-  { "hanzi": "至今", "pinyin": "zhìjīn", "meaning": "so far", "bn": "অদ্যাবধি" },
-  { "hanzi": "至于", "pinyin": "zhìyú", "meaning": "as for", "bn": "সম্পর্কে" },
-  { "hanzi": "治疗", "pinyin": "zhìliáo", "meaning": "treat", "bn": "চিকিৎসা করা" },
-  { "hanzi": "志愿者", "pinyin": "zhìyuànzhě", "meaning": "volunteer", "bn": "স্বেচ্ছাসেবক" },
-  { "hanzi": "中心", "pinyin": "zhōngxīn", "meaning": "centre", "bn": "কেন্দ্র" },
-  { "hanzi": "种类", "pinyin": "zhǒnglèi", "meaning": "kind", "bn": "ধরন" },
-  { "hanzi": "重大", "pinyin": "zhòngdà", "meaning": "major", "bn": "গুরুত্বপূর্ণ" },
-  { "hanzi": "重量", "pinyin": "zhòngliàng", "meaning": "weight", "bn": "ওজন" },
-  { "hanzi": "猪", "pinyin": "zhū", "meaning": "pig", "bn": "শূকর" },
-  { "hanzi": "逐渐", "pinyin": "zhújiàn", "meaning": "gradually", "bn": "ধীরে ধীরে" },
-  { "hanzi": "煮", "pinyin": "zhǔ", "meaning": "boil", "bn": "সিদ্ধ করা" },
-  { "hanzi": "主动", "pinyin": "zhǔdòng", "meaning": "active", "bn": "সক্রিয়" },
-  { "hanzi": "主人", "pinyin": "zhǔrén", "meaning": "master", "bn": "মালিক" },
-  { "hanzi": "主席", "pinyin": "zhǔxí", "meaning": "chairman", "bn": "সভাপতি" },
-  { "hanzi": "主张", "pinyin": "zhǔzhāng", "meaning": "advocate", "bn": "সমর্থন করা" },
-  { "hanzi": "祝福", "pinyin": "zhùfú", "meaning": "bless", "bn": "আশীর্বাদ করা" },
-  { "hanzi": "注册", "pinyin": "zhùcè", "meaning": "register", "bn": "নিবন্ধন করা" },
-  { "hanzi": "抓紧", "pinyin": "zhuājǐn", "meaning": "grasp firmly", "bn": "দৃঢ়ভাবে ধরা" },
-  { "hanzi": "转变", "pinyin": "zhuǎnbiàn", "meaning": "transform", "bn": "রূপান্তর করা" },
-  { "hanzi": "装饰", "pinyin": "zhuāngshì", "meaning": "decorate", "bn": "সাজানো" },
-  { "hanzi": "撞", "pinyin": "zhuàng", "meaning": "bump", "bn": "ধাক্কা লাগা" },
-  { "hanzi": "状态", "pinyin": "zhuàngtài", "meaning": "state", "bn": "অবস্থা" },
-  { "hanzi": "追求", "pinyin": "zhuīqiú", "meaning": "pursue", "bn": "অনুসরণ করা" },
-  { "hanzi": "资金", "pinyin": "zījīn", "meaning": "capital", "bn": "মূলধন" },
-  { "hanzi": "资源", "pinyin": "zīyuán", "meaning": "resources", "bn": "সম্পদ" },
-  { "hanzi": "咨询", "pinyin": "zīxún", "meaning": "consult", "bn": "পরামর্শ নেওয়া" },
-  { "hanzi": "字母", "pinyin": "zìmǔ", "meaning": "letter", "bn": "বর্ণ" },
-  { "hanzi": "自从", "pinyin": "zìcóng", "meaning": "since", "bn": "থেকে" },
-  { "hanzi": "自豪", "pinyin": "zìháo", "meaning": "proud", "bn": "গর্বিত" },
-  { "hanzi": "自觉", "pinyin": "zìjué", "meaning": "conscious", "bn": "সচেতন" },
-  { "hanzi": "自私", "pinyin": "zìsī", "meaning": "selfish", "bn": "স্বার্থপর" },
-  { "hanzi": "自愿", "pinyin": "zìyuàn", "meaning": "voluntary", "bn": "স্বেচ্ছায়" },
-  { "hanzi": "总裁", "pinyin": "zǒngcái", "meaning": "CEO", "bn": "সিইও" },
-  { "hanzi": "总统", "pinyin": "zǒngtǒng", "meaning": "president", "bn": "রাষ্ট্রপতি" },
-  { "hanzi": "组", "pinyin": "zǔ", "meaning": "group", "bn": "দল" },
-  { "hanzi": "组合", "pinyin": "zǔhé", "meaning": "combination", "bn": "সমন্বয়" },
-  { "hanzi": "阻止", "pinyin": "zǔzhǐ", "meaning": "prevent", "bn": "বাধা দেওয়া" },
-  { "hanzi": "醉", "pinyin": "zuì", "meaning": "drunk", "bn": "মাতাল" },
-  { "hanzi": "最初", "pinyin": "zuìchū", "meaning": "first", "bn": "প্রথম" },
-  { "hanzi": "尊敬", "pinyin": "zūnjìng", "meaning": "respect", "bn": "সম্মান করা" },
-  { "hanzi": "遵守", "pinyin": "zūnshǒu", "meaning": "obey", "bn": "মেনে চলা" },
-  { "hanzi": "作品", "pinyin": "zuòpǐn", "meaning": "work", "bn": "কাজ" },
-  { "hanzi": "作为", "pinyin": "zuòwéi", "meaning": "as", "bn": "হিসেবে" }
-]
+            <button class="btn-icon" id="admin-btn" onclick="app.openAdmin()" title="Admin Panel">
+                <i class="fas fa-user-shield"></i>
+            </button>
+            
+            <button class="btn-icon" onclick="app.toggleLang()"><i class="fas fa-language"></i></button>
+            <button class="btn-icon" onclick="app.toggleTheme()"><i class="fas fa-adjust"></i></button>
+            <button class="btn-icon" onclick="app.toggleCart()">
+                <i class="fas fa-shopping-bag"></i><span class="badge" id="cart-count">0</span>
+            </button>
+            <button class="btn-icon" onclick="app.openProfile()">
+                <img id="user-avatar" src="" style="width:28px; height:28px; border-radius:50%;">
+            </button>
+        </div>
+    </header>
 
+    <div id="home-view">
+        <div class="controls-bar">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="বই খুঁজুন... / Search books...">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="filters">
+                <select id="category-filter" onchange="app.renderBooks()">
+                    <option value="all">All Categories</option>
+                    <option value="technology">Technology</option>
+                    <option value="islamic">Islamic</option>
+                    <option value="fiction">Fiction</option>
+                    <option value="kids">Kids</option>
+                    <option value="education">Education</option>
+                </select>
+                <select id="sort-filter" onchange="app.renderBooks()">
+                    <option value="newest">Newest</option>
+                    <option value="price-low">Low Price</option>
+                    <option value="price-high">High Price</option>
+                </select>
+            </div>
+        </div>
+        <div class="book-grid" id="book-container"></div>
+    </div>
 
+    <div id="news-view">
+        <h1 style="margin-bottom: 20px; border-bottom: 2px solid var(--primary); display:inline-block; padding-bottom: 5px;">News Feed & Articles</h1>
+        <div id="news-container">
+            </div>
+    </div>
 
-    const STORAGE_POS='hsk5_pos';
-    const STORAGE_THEME='hsk5_theme';
+    <div class="modal-overlay" id="admin-modal">
+        <div class="modal-content" style="max-width: 600px; flex-direction: column;">
+            <div style="padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items:center;">
+                <h2>Admin Dashboard</h2>
+                <span class="close-modal" onclick="document.getElementById('admin-modal').classList.remove('active')" style="position:static; margin:0;">&times;</span>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="app.switchAdminTab('books')">Manage Books</button>
+                <button class="admin-tab" onclick="app.switchAdminTab('news')">Post News</button>
+            </div>
 
-    let index=0, side=0;
+            <div style="padding: 20px;">
+                <div id="admin-sec-books" class="admin-panel-section active">
+                    <h3>Add New Book</h3>
+                    <div class="admin-form">
+                        <div class="form-group">
+                            <label>Title (Bangla)</label>
+                            <input type="text" id="admin-title-bn" class="form-control" placeholder="বইয়ের নাম (বাংলা)">
+                        </div>
+                        <div class="form-group">
+                            <label>Title (English)</label>
+                            <input type="text" id="admin-title-en" class="form-control" placeholder="Book Title (English)">
+                        </div>
+                        <div class="form-group" style="display:flex; gap:10px;">
+                            <div style="flex:1">
+                                <label>Price</label>
+                                <input type="number" id="admin-price" class="form-control" placeholder="350">
+                            </div>
+                            <div style="flex:1">
+                                <label>Category</label>
+                                <select id="admin-cat" class="form-control">
+                                    <option value="technology">Technology</option>
+                                    <option value="islamic">Islamic</option>
+                                    <option value="fiction">Fiction</option>
+                                    <option value="kids">Kids</option>
+                                    <option value="education">Education</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Image URL</label>
+                            <input type="text" id="admin-img" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="admin-desc" class="form-control" rows="3" placeholder="Book Details..."></textarea>
+                        </div>
+                        <button class="btn-primary" onclick="app.addNewBook()">Post Book</button>
+                    </div>
 
-    const cardEl=document.getElementById('card');
-    const pinyinEl=document.getElementById('pinyin');
-    const meanEl=document.getElementById('mean');
-    const bnEl=document.getElementById('bn');
-    const statEl=document.getElementById('stat');
-    const toggleBtn=document.getElementById('toggle');
+                    <h3 style="margin-top: 30px;">Manage Books</h3>
+                    <div class="admin-book-list" id="admin-list"></div>
+                </div>
 
-    // theme
-    function applyTheme(t){
-      document.documentElement.setAttribute('data-theme',t);
-      localStorage.setItem(STORAGE_THEME,t);
-    }
-    function loadTheme(){
-      const t=localStorage.getItem(STORAGE_THEME)||'light';
-      applyTheme(t);
-    }
-    toggleBtn.onclick=()=>{
-      const cur=localStorage.getItem(STORAGE_THEME)||'light';
-      applyTheme(cur==='light'?'dark':'light');
-    };
+                <div id="admin-sec-news" class="admin-panel-section">
+                    <h3>Write New Article</h3>
+                    <div class="admin-form">
+                        <div class="form-group">
+                            <label>Article Title</label>
+                            <input type="text" id="news-title" class="form-control" placeholder="Headline...">
+                        </div>
+                        <div class="form-group">
+                            <label>Cover Image URL (Optional)</label>
+                            <input type="text" id="news-img" class="form-control" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Content</label>
+                            <textarea id="news-content" class="form-control" rows="8" placeholder="Write your article here..."></textarea>
+                        </div>
+                        <button class="btn-primary" onclick="app.addNews()">Publish Article</button>
+                    </div>
 
-    // card position
-    function loadPos(){
-      const raw=localStorage.getItem(STORAGE_POS);
-      if(raw) index=parseInt(raw,10)||0;
-    }
-    function savePos(){
-      localStorage.setItem(STORAGE_POS,index);
-    }
+                    <h3 style="margin-top: 30px;">Recent Articles</h3>
+                    <div class="admin-book-list" id="admin-news-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function show(){
-      const c=data[index];
-      if(side===0){
-        cardEl.textContent=c.hanzi;
-        pinyinEl.textContent=''; meanEl.textContent=''; bnEl.textContent='';
-      }else{
-        cardEl.textContent=c.hanzi;
-        pinyinEl.textContent=c.pinyin;
-        meanEl.textContent=c.meaning;
-        bnEl.textContent=c.bn;
-      }
-      statEl.textContent=`${index+1} / ${data.length}`;
-      savePos();
-    }
-    function flip(){side^=1; show();}
-    function next(){
-      index=(index+1)%data.length; side=0; show();
-    }
-    function resetAll(){
-      index=0; side=0;
-      localStorage.removeItem(STORAGE_POS);
-      show();
-    }
-
-    // init
-    loadTheme();
-    loadPos();
-    show();
-  </script>
-</body>
-</html>
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Cart</h3>
+            <button class="btn-icon" onclick="app.toggleCart()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cart-items" id="cart-items-container"></div>
+        <div class="cart-footer">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input type="text" id="coupon" placeholder="Code: MASUD10" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                <button class="btn-primary" style="width:auto;" onclick="app.applyCoupon()">Apply</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.2rem; margin-bottom:15px;">
+                <span>Total:</span> <span id="cart-tota
