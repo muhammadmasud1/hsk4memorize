@@ -288,4 +288,506 @@
                 <button class="btn-primary" style="width:auto;" onclick="app.applyCoupon()">Apply</button>
             </div>
             <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:1.2rem; margin-bottom:15px;">
-                <span>Total:</span> <span id="cart-tota
+                <span>Total:</span> <span id="cart-total">0 ৳</span>
+            </div>
+            <button class="btn-primary" style="background:#25D366;" onclick="app.checkoutWhatsApp()">
+                <i class="fab fa-whatsapp"></i> Buy on WhatsApp
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="product-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('product-modal').classList.remove('active')">&times;</span>
+            <div class="modal-left">
+                <img id="modal-img" src="">
+            </div>
+            <div class="modal-right">
+                <span id="modal-cat" style="background:var(--primary); color:white; padding:4px 10px; border-radius:4px; align-self:flex-start; font-size:0.8rem;">Cat</span>
+                <h2 id="modal-title" style="margin:10px 0;">Title</h2>
+                <h3 id="modal-price" style="color:var(--accent); margin-bottom:15px;">Price</h3>
+                <p id="modal-desc" style="line-height:1.6; color:var(--text-light); margin-bottom:20px; flex:1;">Desc</p>
+                <div style="display:flex; gap:10px; margin-top:auto;">
+                    <button class="btn-primary" id="modal-add">Add to Cart</button>
+                    <button class="btn-primary" style="background:#e74c3c;" onclick="pdfViewer.load()">Read PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="profile-modal">
+        <div class="modal-content" style="max-width:400px; flex-direction:column; padding:0; max-height:80vh;">
+            <div style="background:var(--primary); color:white; padding:30px; text-align:center;">
+                <span class="close-modal" onclick="document.getElementById('profile-modal').classList.remove('active')" style="color:white; background:transparent;">&times;</span>
+                <img id="profile-img-lg" style="width:80px; border-radius:50%; border:3px solid white;">
+                <h2 id="profile-name">Name</h2>
+            </div>
+            <div style="padding:20px; overflow-y:auto;">
+                <h4>Order History</h4>
+                <div id="order-list" style="margin-top:10px;"></div>
+                <button class="btn-primary" onclick="app.logout()" style="background:#333; margin-top:20px;">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="pdf-modal">
+        <div class="modal-content pdf-modal-content">
+            <div style="padding:10px; background:#000; display:flex; justify-content:space-between; align-items:center; color:white;">
+                <button onclick="document.getElementById('pdf-modal').classList.remove('active')" class="btn-icon" style="color:white;"><i class="fas fa-arrow-left"></i></button>
+                <span>Page <span id="p-num">1</span> / <span id="p-count">--</span></span>
+                <div>
+                    <button onclick="pdfViewer.prev()" class="btn-icon" style="display:inline-flex; color:white;"><i class="fas fa-chevron-left"></i></button>
+                    <button onclick="pdfViewer.next()" class="btn-icon" style="display:inline-flex; color:white;"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div id="pdf-render">
+                <canvas id="the-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Default Data
+        const defaultBooks = [
+            { id: 1, title_bn: "প্রোগ্রামিংয়ের বলদ টু বস", title_en: "Programming Hero", price: 350, cat: "technology", img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400", desc: "Best coding book for beginners." },
+            { id: 2, title_bn: "প্যারাডক্সিক্যাল সাজিদ", title_en: "Paradoxical Sajid", price: 400, cat: "islamic", img: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400", desc: "Best selling Islamic book." },
+            { id: 3, title_bn: "হ্যারি পটার", title_en: "Harry Potter", price: 800, cat: "fiction", img: "https://images.unsplash.com/photo-1618666012174-83b441c0bc76?w=400", desc: "The magical world of wizards." }
+        ];
+
+        // Default News Data
+        const defaultNews = [
+            { id: 101, title: "বইমেলা ২০২৬ শুরু!", date: "15 Jan, 2026", content: "আমাদের প্রাণের বইমেলা শুরু হয়েছে। সবাইকে আমন্ত্রণ। এবারের মেলায় থাকছে প্রচুর নতুন বই এবং লেখকদের সাথে আড্ডা দেওয়ার সুযোগ।", img: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600" }
+        ];
+
+        const app = {
+            state: { 
+                user: null, 
+                cart: [], 
+                lang: 'bn', 
+                theme: 'light', 
+                discount: 0, 
+                orders: [], 
+                books: [], 
+                news: [] // Added News Array
+            },
+            currentId: null,
+
+            init() {
+                // Load State
+                const s = localStorage.getItem('bg_store_v3'); // Changed key to v3 for new schema
+                if(s) this.state = {...this.state, ...JSON.parse(s)};
+                
+                // Load Defaults if empty
+                if(!this.state.books || this.state.books.length === 0) this.state.books = defaultBooks;
+                if(!this.state.news || this.state.news.length === 0) this.state.news = defaultNews;
+
+                if(!this.state.user) {
+                    document.getElementById('auth-overlay').style.display = 'flex';
+                } else {
+                    this.updateUser();
+                }
+
+                this.applyTheme();
+                this.renderBooks();
+                this.renderNews(); // Render News
+                this.updateCart();
+                this.init3D();
+
+                document.getElementById('search-input').addEventListener('input', ()=>this.renderBooks());
+            },
+
+            save() { localStorage.setItem('bg_store_v3', JSON.stringify(this.state)); },
+
+            login() {
+                const n = document.getElementById('username-input').value.trim();
+                if(n) {
+                    this.state.user = { name: n, join: new Date().toLocaleDateString(), isAdmin: n === 'admin' };
+                    this.save();
+                    document.getElementById('auth-overlay').style.display = 'none';
+                    this.updateUser();
+                    this.toast(`Welcome ${n}`);
+                }
+            },
+            logout() { this.state.user = null; this.state.cart = []; this.save(); location.reload(); },
+            
+            updateUser() {
+                document.getElementById('user-avatar').src = `https://ui-avatars.com/api/?name=${this.state.user.name}&background=random`;
+                if(this.state.user.name === 'admin') {
+                    document.getElementById('admin-btn').style.display = 'flex';
+                }
+            },
+
+            // --- VIEW SWITCHING ---
+            switchTab(tab) {
+                const homeView = document.getElementById('home-view');
+                const newsView = document.getElementById('news-view');
+                const navHome = document.getElementById('nav-home');
+                const navNews = document.getElementById('nav-news');
+
+                if (tab === 'home') {
+                    homeView.style.display = 'block';
+                    newsView.style.display = 'none';
+                    navHome.classList.add('active-nav');
+                    navNews.classList.remove('active-nav');
+                } else {
+                    homeView.style.display = 'none';
+                    newsView.style.display = 'block';
+                    navHome.classList.remove('active-nav');
+                    navNews.classList.add('active-nav');
+                }
+            },
+
+            // --- ADMIN LOGIC ---
+            openAdmin() {
+                if(this.state.user.name !== 'admin') return;
+                this.renderAdminList();
+                this.renderAdminNewsList();
+                document.getElementById('admin-modal').classList.add('active');
+            },
+
+            switchAdminTab(tab) {
+                const tabs = document.querySelectorAll('.admin-tab');
+                const secs = document.querySelectorAll('.admin-panel-section');
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                secs.forEach(s => s.classList.remove('active'));
+
+                if(tab === 'books') {
+                    tabs[0].classList.add('active');
+                    document.getElementById('admin-sec-books').classList.add('active');
+                } else {
+                    tabs[1].classList.add('active');
+                    document.getElementById('admin-sec-news').classList.add('active');
+                }
+            },
+
+            addNewBook() {
+                const title_bn = document.getElementById('admin-title-bn').value;
+                const title_en = document.getElementById('admin-title-en').value;
+                const price = document.getElementById('admin-price').value;
+                const cat = document.getElementById('admin-cat').value;
+                const img = document.getElementById('admin-img').value;
+                const desc = document.getElementById('admin-desc').value;
+
+                if(!title_bn || !price || !img) { this.toast("Please fill required fields"); return; }
+
+                const newBook = {
+                    id: Date.now(),
+                    title_bn, title_en: title_en || title_bn,
+                    price: parseInt(price),
+                    cat, img, desc
+                };
+
+                this.state.books.unshift(newBook);
+                this.save();
+                this.renderBooks();
+                this.renderAdminList();
+                this.toast("Book Added Successfully!");
+                
+                document.getElementById('admin-title-bn').value = '';
+                document.getElementById('admin-price').value = '';
+            },
+
+            deleteBook(id) {
+                if(confirm("Are you sure?")) {
+                    this.state.books = this.state.books.filter(b => b.id !== id);
+                    this.save();
+                    this.renderBooks();
+                    this.renderAdminList();
+                    this.toast("Book Deleted");
+                }
+            },
+
+            renderAdminList() {
+                const list = document.getElementById('admin-list');
+                list.innerHTML = this.state.books.map(b => `
+                    <div class="admin-book-item">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${b.img}" style="width:40px; height:50px; object-fit:cover; border-radius:4px;">
+                            <div>
+                                <div style="font-weight:bold;">${b.title_en}</div>
+                                <small>${b.price} tk</small>
+                            </div>
+                        </div>
+                        <button class="delete-btn" onclick="app.deleteBook(${b.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                `).join('');
+            },
+
+            // --- NEWS LOGIC ---
+            addNews() {
+                const title = document.getElementById('news-title').value;
+                const img = document.getElementById('news-img').value;
+                const content = document.getElementById('news-content').value;
+
+                if(!title || !content) { this.toast("Title & Content required"); return; }
+
+                const article = {
+                    id: Date.now(),
+                    title, img, content,
+                    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                };
+
+                this.state.news.unshift(article);
+                this.save();
+                this.renderNews();
+                this.renderAdminNewsList();
+                this.toast("Article Published!");
+                
+                document.getElementById('news-title').value = '';
+                document.getElementById('news-content').value = '';
+                document.getElementById('news-img').value = '';
+            },
+
+            deleteNews(id) {
+                if(confirm("Delete article?")) {
+                    this.state.news = this.state.news.filter(n => n.id !== id);
+                    this.save();
+                    this.renderNews();
+                    this.renderAdminNewsList();
+                    this.toast("Article Deleted");
+                }
+            },
+
+            renderAdminNewsList() {
+                const list = document.getElementById('admin-news-list');
+                list.innerHTML = this.state.news.map(n => `
+                    <div class="admin-book-item">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <div style="font-weight:bold;">${n.title}</div>
+                        </div>
+                        <button class="delete-btn" onclick="app.deleteNews(${n.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                `).join('');
+            },
+
+            renderNews() {
+                const container = document.getElementById('news-container');
+                if(this.state.news.length === 0) {
+                    container.innerHTML = "<p style='text-align:center; padding:20px;'>No news available.</p>";
+                    return;
+                }
+                container.innerHTML = this.state.news.map(n => `
+                    <div class="news-card">
+                        ${n.img ? `<img src="${n.img}" class="news-img" loading="lazy">` : ''}
+                        <div class="news-content">
+                            <span class="news-date"><i class="far fa-calendar-alt"></i> ${n.date}</span>
+                            <h2 class="news-title">${n.title}</h2>
+                            <p class="news-body">${n.content}</p>
+                            <div class="news-actions">
+                                <button class="btn-icon" style="width:auto; padding:0 10px; border-radius:20px; font-size:0.9rem;" onclick="app.toast('Liked!')">
+                                    <i class="far fa-heart"></i> Like
+                                </button>
+                                <button class="btn-icon" style="width:auto; padding:0 10px; border-radius:20px; font-size:0.9rem;" onclick="app.toast('Shared!')">
+                                    <i class="fas fa-share-alt"></i> Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            // --- EXISTING FUNCTIONS ---
+
+            toggleTheme() {
+                this.state.theme = this.state.theme === 'light' ? 'dark' : 'light';
+                this.applyTheme(); this.save();
+            },
+            applyTheme() { document.body.className = this.state.theme === 'dark' ? 'dark-mode' : ''; },
+            
+            toggleLang() {
+                this.state.lang = this.state.lang === 'bn' ? 'en' : 'bn';
+                this.renderBooks(); this.updateCart(); this.save();
+            },
+
+            renderBooks() {
+                const q = document.getElementById('search-input').value.toLowerCase();
+                const cat = document.getElementById('category-filter').value;
+                const sort = document.getElementById('sort-filter').value;
+                
+                let d = this.state.books.filter(b => (cat==='all'||b.cat===cat) && (b.title_en.toLowerCase().includes(q)||b.title_bn.includes(q)));
+                
+                if(sort === 'price-low') d.sort((a,b)=>a.price-b.price);
+                if(sort === 'price-high') d.sort((a,b)=>b.price-a.price);
+                if(sort === 'newest') d.reverse();
+
+                document.getElementById('book-container').innerHTML = d.map(b => {
+                    const title = this.state.lang==='bn' ? b.title_bn : b.title_en;
+                    return `
+                    <div class="book-card" onclick="app.openModal(${b.id})">
+                        <div class="book-img-wrap">
+                            <img src="${b.img}" class="book-img" loading="lazy">
+                            <div class="card-actions">
+                                <button class="action-btn" onclick="event.stopPropagation(); app.addToCart(${b.id})"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                        <div class="book-info">
+                            <div>
+                                <div class="book-cat">${b.cat}</div>
+                                <div class="book-title">${title}</div>
+                            </div>
+                            <div class="book-price">${b.price} ৳</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            },
+
+            openModal(id) {
+                this.currentId = id;
+                const b = this.state.books.find(x=>x.id===id);
+                document.getElementById('modal-img').src = b.img;
+                document.getElementById('modal-title').innerText = this.state.lang==='bn'?b.title_bn:b.title_en;
+                document.getElementById('modal-price').innerText = b.price + ' ৳';
+                document.getElementById('modal-desc').innerText = b.desc;
+                document.getElementById('modal-cat').innerText = b.cat;
+                document.getElementById('modal-add').onclick = () => this.addToCart(id);
+                document.getElementById('product-modal').classList.add('active');
+            },
+
+            addToCart(id) {
+                const i = this.state.cart.find(x=>x.id===id);
+                if(i) i.qty++; else this.state.cart.push({id, qty:1});
+                this.save(); this.updateCart(); this.toast('Added to Cart');
+            },
+
+            updateCart() {
+                let t = 0, c = 0;
+                document.getElementById('cart-items-container').innerHTML = this.state.cart.map(i => {
+                    const b = this.state.books.find(x=>x.id===i.id);
+                    if(!b) return '';
+                    t += b.price * i.qty; c += i.qty;
+                    const title = this.state.lang==='bn'?b.title_bn:b.title_en;
+                    return `
+                    <div class="cart-item">
+                        <img src="${b.img}">
+                        <div style="flex:1">
+                            <div style="font-weight:600; font-size:0.9rem">${title}</div>
+                            <div style="font-size:0.8rem; color:#777">${b.price} x ${i.qty}</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                            <button class="btn-icon" style="background:#eee; width:25px; height:25px;" onclick="app.modQty(${i.id},1)">+</button>
+                            <button class="btn-icon" style="background:#eee; width:25px; height:25px;" onclick="app.modQty(${i.id},-1)">-</button>
+                        </div>
+                    </div>`;
+                }).join('');
+                document.getElementById('cart-count').innerText = c;
+                if(this.state.discount) t = t - (t*0.1);
+                document.getElementById('cart-total').innerText = Math.round(t) + " ৳";
+            },
+
+            modQty(id, d) {
+                const i = this.state.cart.find(x=>x.id===id);
+                i.qty += d;
+                if(i.qty <= 0) this.state.cart = this.state.cart.filter(x=>x.id!==id);
+                this.save(); this.updateCart();
+            },
+
+            toggleCart() { document.getElementById('cart-sidebar').classList.toggle('open'); },
+            
+            applyCoupon() {
+                if(document.getElementById('coupon').value==='MASUD10') {
+                    this.state.discount = 1; this.updateCart(); this.toast('Discount Applied!');
+                } else this.toast('Invalid Code');
+            },
+
+            checkoutWhatsApp() {
+                if(!this.state.cart.length) return;
+                let msg = `New Order from ${this.state.user.name}%0a`;
+                let t = 0;
+                this.state.cart.forEach(i => {
+                    const b = this.state.books.find(x=>x.id===i.id);
+                    if(b) {
+                        msg += `- ${b.title_en} (${i.qty}) : ${b.price*i.qty}%0a`;
+                        t += b.price*i.qty;
+                    }
+                });
+                msg += `%0aTotal: ${t} Tk`;
+                this.state.orders.push({date: new Date().toLocaleDateString(), total: t});
+                this.state.cart = []; this.save(); this.updateCart();
+                window.open(`https://wa.me/8801700000000?text=${msg}`);
+            },
+
+            openProfile() {
+                document.getElementById('profile-name').innerText = this.state.user.name;
+                document.getElementById('profile-img-lg').src = document.getElementById('user-avatar').src;
+                document.getElementById('order-list').innerHTML = this.state.orders.map(o=>`
+                    <div style="border-bottom:1px solid #eee; padding:8px 0; display:flex; justify-content:space-between">
+                        <span>${o.date}</span> <b>${o.total} ৳</b>
+                    </div>
+                `).join('') || '<small>No orders yet</small>';
+                document.getElementById('profile-modal').classList.add('active');
+            },
+
+            toast(msg) {
+                const t = document.createElement('div');
+                t.className = 'toast'; t.innerText = msg;
+                document.body.appendChild(t);
+                setTimeout(()=>t.remove(), 2500);
+            },
+
+            init3D() {
+                const canvas = document.getElementById('bg-canvas');
+                const renderer = new THREE.WebGLRenderer({canvas, alpha: true, antialias: true});
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+                camera.position.z = 12;
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambientLight);
+                const pointLight = new THREE.PointLight(0x4361ee, 0.5); pointLight.position.set(10, 10, 10); scene.add(pointLight);
+
+                const geometry = new THREE.BoxGeometry(1.2, 1.6, 0.2);
+                const colors = [0x4361ee, 0xf72585, 0x3f37c9, 0x00b894, 0x6c5ce7];
+                const books3D = [];
+
+                for(let i=0; i<30; i++) {
+                    const material = new THREE.MeshLambertMaterial({ color: colors[Math.floor(Math.random() * colors.length)], transparent: true, opacity: 0.25 });
+                    const book = new THREE.Mesh(geometry, material);
+                    book.position.set((Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 20 - 5);
+                    book.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+                    scene.add(book);
+                    books3D.push({ mesh: book, rotX: (Math.random()-0.5) * 0.01, rotY: (Math.random()-0.5) * 0.01, speedY: (Math.random()-0.5) * 0.02 });
+                }
+
+                let mouseX = 0, mouseY = 0;
+                document.addEventListener('mousemove', (e) => { mouseX = (e.clientX - window.innerWidth / 2) * 0.0005; mouseY = (e.clientY - window.innerHeight / 2) * 0.0005; });
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    camera.position.x += (mouseX * 10 - camera.position.x) * 0.05;
+                    camera.position.y += (-mouseY * 10 - camera.position.y) * 0.05;
+                    camera.lookAt(scene.position);
+                    books3D.forEach(item => {
+                        item.mesh.rotation.x += item.rotX; item.mesh.rotation.y += item.rotY; item.mesh.position.y += item.speedY;
+                        if (item.mesh.position.y > 20) item.mesh.position.y = -20; if (item.mesh.position.y < -20) item.mesh.position.y = 20;
+                    });
+                    renderer.render(scene, camera);
+                }
+                animate();
+                window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+            }
+        };
+
+        const pdfViewer = {
+            pdf: null, page: 1,
+            load() {
+                document.getElementById('pdf-modal').classList.add('active');
+                const url = 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/examples/learning/helloworld.pdf';
+                pdfjsLib.getDocument(url).promise.then(p => { this.pdf = p; document.getElementById('p-count').innerText = p.numPages; this.render(1); });
+            },
+            render(n) {
+                this.pdf.getPage(n).then(p => {
+                    const canvas = document.getElementById('the-canvas'); const ctx = canvas.getContext('2d');
+                    const vp = p.getViewport({scale: window.innerWidth < 600 ? 0.6 : 1.2}); canvas.width = vp.width; canvas.height = vp.height;
+                    p.render({canvasContext: ctx, viewport: vp}); document.getElementById('p-num').innerText = n;
+                });
+            },
+            prev() { if(this.page>1) this.render(--this.page); },
+            next() { if(this.page<this.pdf.numPages) this.render(++this.page); }
+        };
+
+        window.onload = ()=>app.init();
+    </script>
+</body>
+</html>
